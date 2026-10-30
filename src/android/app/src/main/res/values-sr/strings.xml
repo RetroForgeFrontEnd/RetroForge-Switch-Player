@@ -300,7 +300,6 @@
     <string name="gaia_is_not_real">Гаиа није стварно</string>
     <string name="copied_to_clipboard">Копирано у међуспремник</string>
     <string name="contributors">Сарадници</string>
-    <string name="licenses_description">Пројекти који омогућавају ЕДЕН за Андроид</string>
     <string name="build">Градити</string>
     <string name="user_data">Кориснички подаци</string>
     <string name="exporting_user_data">Извоз података корисника ...</string>

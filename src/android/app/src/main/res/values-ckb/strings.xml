@@ -156,7 +156,7 @@
 
     <!-- Setup strings -->
     <string name="welcome">بەخێربێیت!</string>
-    <string name="welcome_description">فێربە چۆن &lt;b>Eden&lt;/b> ڕێکبخەیت و بچییە ناو ئیمولەیشن.</string>
+    <string name="welcome_description">فێربە چۆن &lt;b>RetroForge Switch Player&lt;/b> ڕێکبخەیت و بچییە ناو ئیمولەیشن.</string>
     <string name="get_started">دەست پێبکە</string>
     <string name="keys">کلیلەکان</string>
     <string name="keys_description">فایلی &lt;b>prod.keys&lt;/b> هەڵبژێرە بە دوگمەی خوارەوە.</string>
@@ -289,7 +289,6 @@
     <string name="gaia_is_not_real">گایا ڕاستەقینە نییە</string>
     <string name="copied_to_clipboard">کۆپی کرا بۆ تەختەی نووسین</string>
     <string name="contributors">بەشداربووان</string>
-    <string name="licenses_description">ئەو پڕۆژانەی کە یوزوی بۆ ئەندرۆید ڕەخساند</string>
     <string name="build">بونیات</string>
     <!-- General settings strings -->
     <string name="frame_limit_enable">سنووردارکردنی خێرایی</string>

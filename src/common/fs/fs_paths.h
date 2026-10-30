@@ -36,4 +36,4 @@
 #define RYUJINX_DIR "Ryujinx"
 
 // yuzu-specific files
-#define LOG_FILE "eden_log.txt"
+#define LOG_FILE "log.txt"

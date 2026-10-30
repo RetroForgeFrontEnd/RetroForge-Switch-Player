@@ -457,6 +457,11 @@ std::vector<u8> BuildMsgpack(std::string_view title, std::string_view body,
 }
 
 void EnsureBuiltinNewsLoaded() {
+    // RetroForge Switch Player: no built-in emulator news (it fetched Eden's releases and logo from eden-emu.dev)
+    constexpr bool builtin_news_enabled = false;
+    if (!builtin_news_enabled) {
+        return;
+    }
     static std::once_flag once;
     std::call_once(once, [] {
         LoadDefaultLogos();
