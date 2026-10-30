@@ -924,6 +924,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         binding.root.findNavController().navigate(direction)
     }
 
+    private fun openFromPauseMenu(intent: Intent) {
+        pausedByMenu = false
+        returnToPauseMenu = true
+        pauseMenu?.close()
+        startActivity(intent)
+    }
+
     private fun showMenuPage(page: MenuPage) {
         menuPage = page
         pauseMenu?.notice = null
@@ -1147,6 +1154,12 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     R.array.rendererAccuracyNames,
                     R.array.rendererAccuracyValues
                 ),
+                PauseMenu.Item(getString(R.string.player_switch_settings_item)) {
+                    openFromPauseMenu(
+                        Intent(requireContext(), org.yuzu.yuzu_emu.ui.main.MainActivity::class.java)
+                            .putExtra(org.yuzu.yuzu_emu.ui.main.MainActivity.EXTRA_FROM_GAME, true)
+                    )
+                },
                 PauseMenu.Item(getString(R.string.load_amiibo)) {
                     pauseMenu?.close()
                     handleLoadAmiiboSelection()

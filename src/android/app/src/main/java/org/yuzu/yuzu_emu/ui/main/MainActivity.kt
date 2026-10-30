@@ -4,6 +4,7 @@
 package org.yuzu.yuzu_emu.ui.main
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
@@ -33,6 +34,12 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (intent.getBooleanExtra(EXTRA_CHECK, false)) {
+            super.onCreate(savedInstanceState)
+            reportSetupState()
+            finish()
+            return
+        }
         val splashScreen = installSplashScreen()
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
@@ -73,6 +80,19 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         FullscreenHelper.applyToActivity(this)
     }
 
+    /** Result for RetroForge: OK once keys and firmware are both installed, with the details as extras. */
+    fun reportSetupState() {
+        val keys = NativeLibrary.areKeysPresent()
+        val firmware = NativeLibrary.isFirmwareAvailable()
+        setResult(
+            if (keys && firmware) RESULT_OK else RESULT_CANCELED,
+            Intent()
+                .putExtra(RESULT_KEYS, keys)
+                .putExtra(RESULT_FIRMWARE, firmware)
+                .putExtra(RESULT_FIRMWARE_VERSION, if (firmware) NativeLibrary.firmwareVersion() else "")
+        )
+    }
+
     override fun setTheme(resId: Int) {
         super.setTheme(resId)
         themeId = resId
@@ -81,5 +101,23 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     override fun onDestroy() {
         EmulationActivity.stopForegroundService(this)
         super.onDestroy()
+    }
+
+    companion object {
+        /** RetroForge's first-run step: Keys and Firmware only, with a Done button. */
+        const val EXTRA_SETUP = "setup"
+
+        /** Answer at once (result code and extras below) without showing anything. */
+        const val EXTRA_CHECK = "check"
+
+        /** Opened from a running game's pause menu: changes apply the next time a game starts. */
+        const val EXTRA_FROM_GAME = "from_game"
+
+        /** A game was started without keys or firmware. */
+        const val EXTRA_MISSING = "missing"
+
+        const val RESULT_KEYS = "keys"
+        const val RESULT_FIRMWARE = "firmware"
+        const val RESULT_FIRMWARE_VERSION = "firmware_version"
     }
 }

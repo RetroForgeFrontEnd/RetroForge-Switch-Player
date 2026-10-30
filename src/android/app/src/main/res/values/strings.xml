@@ -402,10 +402,19 @@
     <string name="gaia_is_not_real">Gaia isn\'t real</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <!-- RetroForge: the player's own screens (no game list; RetroForge is the front end) -->
-    <string name="player_home_title">Games open from RetroForge</string>
-    <string name="player_home_description">Pick a Switch game in RetroForge and it plays here. This app has no game list of its own.</string>
-    <string name="player_open_retroforge">Open RetroForge</string>
-    <string name="player_retroforge_missing">RetroForge is not installed on this device</string>
+    <string name="player_settings_switch">Switch</string>
+    <string name="player_settings_word">settings</string>
+    <string name="player_close">Close</string>
+    <string name="player_switch_settings_item">Switch settings ›</string>
+    <string name="player_setup_description">Install keys and firmware dumped from your own Switch. RetroForge finds your games; nothing else is needed here.</string>
+    <string name="player_missing_description">This game needs keys and firmware. Install them here, then start the game again from RetroForge.</string>
+    <string name="player_from_game_description">Changes here apply the next time a game starts.</string>
+    <string name="player_install_keys">Install keys</string>
+    <string name="player_install_firmware">Install firmware</string>
+    <string name="player_keys_pick">Pick prod.keys, and title.keys too if you have it</string>
+    <string name="player_firmware_from_folder">A folder of .nca files</string>
+    <string name="player_firmware_from_zip">A .zip of .nca files</string>
+    <string name="player_done">Done</string>
     <string name="player_keys">Keys</string>
     <string name="player_keys_installed">prod.keys installed</string>
     <string name="player_keys_missing">Not installed. Needed for retail games; homebrew runs without them. Use keys dumped from your own console.</string>
@@ -434,7 +443,9 @@
     <string name="player_menu_anti_aliasing">Anti-aliasing: %1$s</string>
     <string name="player_menu_screen_shape">Screen shape: %1$s</string>
     <string name="player_menu_docked">Docked mode: %1$s</string>
-    <string name="player_menu_show_fps">Show FPS: %1$s</string>
+    <string name="player_menu_show_fps">Performance overlay: %1$s</string>
+    <string name="player_perf_overlay">Performance overlay</string>
+    <string name="player_perf_overlay_description">%1$s. Frame rate, and the phone, GPU, driver and firmware line, shown over the game</string>
     <string name="player_menu_volume">Volume: %1$d%%</string>
     <string name="player_menu_touch_controls">Touch controls: %1$s</string>
     <string name="player_menu_edit_touch">Move and resize touch controls</string>

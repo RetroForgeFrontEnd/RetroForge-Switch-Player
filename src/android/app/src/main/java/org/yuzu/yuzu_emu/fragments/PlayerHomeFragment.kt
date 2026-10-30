@@ -10,39 +10,62 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.CardPlayerOptionBinding
 import org.yuzu.yuzu_emu.databinding.FragmentPlayerHomeBinding
+import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
+import org.yuzu.yuzu_emu.ui.main.MainActivity
 import org.yuzu.yuzu_emu.utils.InstallableActions
+import org.yuzu.yuzu_emu.utils.NativeConfig
 
 /**
- * RetroForge: the player has no game list. Opened with no game, it points to RetroForge and
- * offers only what the player itself needs: keys, firmware, GPU driver and the GPL credit.
+ * RetroForge: "Switch settings". The player has no game list; RetroForge opens this screen
+ * (as a first-run step with [MainActivity.EXTRA_SETUP], or from its settings), and so does the
+ * pause menu. It offers only what the player itself needs: keys, firmware, GPU driver and About.
  */
 class PlayerHomeFragment : Fragment() {
     private var _binding: FragmentPlayerHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val getProdKey =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
-            if (result != null) {
+    private val extras get() = requireActivity().intent
+    private val setupOnly get() = extras.getBooleanExtra(MainActivity.EXTRA_SETUP, false)
+    private val fromGame get() = extras.getBooleanExtra(MainActivity.EXTRA_FROM_GAME, false)
+
+    private val getKeys =
+        registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { results ->
+            // prod.keys, and title.keys when it was picked too
+            results.forEach { result ->
                 InstallableActions.processKey(
                     activity = requireActivity(),
                     fragmentManager = parentFragmentManager,
                     result = result,
-                    onInstalled = { refreshStatus() }
+                    onInstalled = { if (_binding != null) refreshStatus() }
                 )
             }
         }
 
-    private val getFirmware =
+    private val getFirmwareZip =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
             if (result != null) {
                 InstallableActions.processFirmware(
+                    activity = requireActivity(),
+                    fragmentManager = parentFragmentManager,
+                    result = result,
+                    onComplete = { if (_binding != null) refreshStatus() }
+                )
+            }
+        }
+
+    private val getFirmwareFolder =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
+            if (result != null) {
+                InstallableActions.processFirmwareFolder(
                     activity = requireActivity(),
                     fragmentManager = parentFragmentManager,
                     result = result,
@@ -63,24 +86,25 @@ class PlayerHomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val launchRetroForge =
-            requireContext().packageManager.getLaunchIntentForPackage(RETROFORGE_PACKAGE)
-        binding.buttonOpenRetroforge.apply {
-            isEnabled = launchRetroForge != null
-            if (launchRetroForge == null) text = getString(R.string.player_retroforge_missing)
-            setOnClickListener {
-                launchRetroForge?.let {
-                    startActivity(it)
-                    requireActivity().finish()
-                }
-            }
-        }
+        // Back and the red X close it: to RetroForge, or to the paused game
+        binding.buttonClose.setOnClickListener { requireActivity().finish() }
+        binding.buttonDone.isVisible = setupOnly
+        binding.buttonDone.setOnClickListener { requireActivity().finish() }
 
-        binding.cardKeys.setUp(R.string.player_keys, "") {
-            getProdKey.launch(arrayOf("*/*"))
+        val description = when {
+            extras.getBooleanExtra(MainActivity.EXTRA_MISSING, false) -> R.string.player_missing_description
+            setupOnly -> R.string.player_setup_description
+            fromGame -> R.string.player_from_game_description
+            else -> null
         }
-        binding.cardFirmware.setUp(R.string.firmware, "") {
-            getFirmware.launch(arrayOf("application/zip"))
+        binding.textDescription.isVisible = description != null
+        description?.let { binding.textDescription.setText(it) }
+
+        binding.cardKeys.setUp(R.string.player_install_keys, "") {
+            getKeys.launch(arrayOf("*/*"))
+        }
+        binding.cardFirmware.setUp(R.string.player_install_firmware, "") {
+            chooseFirmwareSource()
         }
         binding.cardDriver.setUp(
             R.string.gpu_driver_manager,
@@ -91,6 +115,17 @@ class PlayerHomeFragment : Fragment() {
         binding.cardAbout.setUp(R.string.about, getString(R.string.player_about_description)) {
             findNavController().navigate(R.id.aboutFragment)
         }
+        binding.cardPerfOverlay.setUp(R.string.player_perf_overlay, "") {
+            // One switch for both of the game's stats overlays, as in the pause menu
+            val show = !isPerfOverlayShown()
+            BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(show)
+            BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(show)
+            NativeConfig.saveGlobalConfig()
+            refreshStatus()
+        }
+        binding.cardPerfOverlay.root.isVisible = !setupOnly
+        binding.cardDriver.root.isVisible = !setupOnly
+        binding.cardAbout.root.isVisible = !setupOnly
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, windowInsets ->
             val insets = windowInsets.getInsets(
@@ -117,21 +152,40 @@ class PlayerHomeFragment : Fragment() {
         _binding = null
     }
 
-    private fun refreshStatus() {
-        binding.cardKeys.optionDescription.text = getString(
-            if (NativeLibrary.areKeysPresent()) {
-                R.string.player_keys_installed
-            } else {
-                R.string.player_keys_missing
+    private fun chooseFirmwareSource() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.player_install_firmware)
+            .setItems(
+                arrayOf(
+                    getString(R.string.player_firmware_from_folder),
+                    getString(R.string.player_firmware_from_zip)
+                )
+            ) { _, which ->
+                if (which == 0) getFirmwareFolder.launch(null) else getFirmwareZip.launch(arrayOf("application/zip"))
             }
-        )
+            .show()
+    }
+
+    private fun refreshStatus() {
+        val keys = NativeLibrary.areKeysPresent()
+        binding.cardKeys.optionDescription.text = getString(
+            if (keys) R.string.player_keys_installed else R.string.player_keys_pick
+        ) + if (keys) "" else "\n" + getString(R.string.player_keys_missing)
         binding.cardFirmware.optionDescription.text =
             if (NativeLibrary.isFirmwareAvailable()) {
                 getString(R.string.player_firmware_installed, NativeLibrary.firmwareVersion())
             } else {
                 getString(R.string.player_firmware_missing)
             }
+        binding.cardPerfOverlay.optionDescription.text = getString(
+            R.string.player_perf_overlay_description,
+            getString(if (isPerfOverlayShown()) R.string.player_menu_on else R.string.player_menu_off)
+        )
+        (activity as? MainActivity)?.reportSetupState()
     }
+
+    private fun isPerfOverlayShown() =
+        BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean() || BooleanSetting.SHOW_SOC_OVERLAY.getBoolean()
 
     private fun CardPlayerOptionBinding.setUp(
         titleId: Int,
@@ -141,9 +195,5 @@ class PlayerHomeFragment : Fragment() {
         optionTitle.setText(titleId)
         optionDescription.text = description
         root.setOnClickListener { onClick() }
-    }
-
-    companion object {
-        const val RETROFORGE_PACKAGE = "com.retroforge.app"
     }
 }

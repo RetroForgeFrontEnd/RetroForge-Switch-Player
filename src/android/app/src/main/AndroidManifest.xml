@@ -63,15 +63,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
         <activity
             android:name="org.yuzu.yuzu_emu.ui.main.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Yuzu.Splash.Main">
-            <intent-filter>
-                <action android:name="com.miui.gamecenter.GAME_BOOSTER_LAUNCH"/>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.GAME" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.Yuzu.Splash.Main" />
+        <!-- RetroForge: no app-drawer entry. MainActivity is "Switch settings", opened by
+             RetroForge (or the pause menu) with an explicit intent; games go to EmulationActivity. -->
 
         <activity
             android:name="org.yuzu.yuzu_emu.features.settings.ui.SettingsActivity"

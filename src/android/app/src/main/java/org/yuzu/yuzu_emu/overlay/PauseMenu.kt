@@ -139,7 +139,8 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
             }
         }
         firstButton = first
-        if (!container.isInTouchMode) first?.requestFocus()
+        // The first button always opens with the orange focus ring, touch or controller, as in RetroForge's and the PS3 menus.
+        first?.requestFocusFromTouch()
     }
 
     private fun menuButton(label: String, action: () -> Unit): MaterialButton =
@@ -157,7 +158,7 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
             insetTop = 0
             insetBottom = 0
             backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
-            rippleColor = ColorStateList.valueOf(0x33D0BCFF)
+            rippleColor = ColorStateList.valueOf(RIPPLE)
             strokeColor = ColorStateList.valueOf(OUTLINE)
             strokeWidth = dp(1)
             isFocusable = true
@@ -176,8 +177,9 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
         ).apply {
             text = label
             isAllCaps = false
-            setTextColor(Color.WHITE)
+            setTextColor(LABEL)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+            rippleColor = ColorStateList.valueOf(RIPPLE)
             backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
             setOnClickListener { action() }
         }
@@ -205,7 +207,8 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
         private const val CARD = 0xFF1C1C22.toInt()
         private const val OUTLINE = 0xFF55555F.toInt()
         private const val FOCUS = 0xFFFF8A1F.toInt()
-        private const val LABEL = 0xFFD0BCFF.toInt()
+        private const val LABEL = 0xFF3ED6FF.toInt() // RetroForge cyan
+        private const val RIPPLE = 0x333ED6FF
         private const val SECONDARY = 0xFFAAAAB4.toInt()
         private const val NOTICE = 0xFF9FE3B0.toInt()
 

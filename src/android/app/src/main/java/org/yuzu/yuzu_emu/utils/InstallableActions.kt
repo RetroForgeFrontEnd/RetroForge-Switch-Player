@@ -54,6 +54,32 @@ object InstallableActions {
         fragmentManager: FragmentManager,
         result: Uri,
         onComplete: (() -> Unit)? = null
+    ) = installFirmware(activity, fragmentManager, onComplete) { cacheDir, progressCallback ->
+        FileUtil.unzipToInternalStorage(result.toString(), cacheDir, progressCallback)
+    }
+
+    /** Firmware as a folder of .nca files (RetroForge: as well as a .zip of them). */
+    fun processFirmwareFolder(
+        activity: FragmentActivity,
+        fragmentManager: FragmentManager,
+        result: Uri,
+        onComplete: (() -> Unit)? = null
+    ) = installFirmware(activity, fragmentManager, onComplete) { cacheDir, progressCallback ->
+        val ncas = FileUtil.listFiles(result).filter { !it.isDirectory && it.filename.endsWith(".nca") }
+        if (ncas.isEmpty()) throw java.io.IOException("No .nca files")
+        cacheDir.mkdirs()
+        ncas.forEachIndexed { index, file ->
+            progressCallback(ncas.size.toLong(), index.toLong())
+            FileUtil.copyUriToInternalStorage(file.uri, cacheDir.path, file.filename)
+                ?: throw java.io.IOException("Could not copy ${file.filename}")
+        }
+    }
+
+    private fun installFirmware(
+        activity: FragmentActivity,
+        fragmentManager: FragmentManager,
+        onComplete: (() -> Unit)?,
+        fillCache: (File, (Long, Long) -> Boolean) -> Unit
     ) {
         val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
         val firmwarePath = File(NativeConfig.getNandDir() + "/system/Contents/registered/")
@@ -65,11 +91,7 @@ object InstallableActions {
         ) { progressCallback, _ ->
             var messageToShow: Any
             try {
-                FileUtil.unzipToInternalStorage(
-                    result.toString(),
-                    cacheFirmwareDir,
-                    progressCallback
-                )
+                fillCache(cacheFirmwareDir, progressCallback)
                 val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
                 val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
                 messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {

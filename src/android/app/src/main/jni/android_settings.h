@@ -82,7 +82,7 @@ namespace AndroidSettings {
                                            Settings::Category::Overlay};
         Settings::Setting<bool> haptic_feedback{linkage, true, "haptic_feedback",
                                                 Settings::Category::Overlay};
-        Settings::Setting<bool> show_performance_overlay{linkage, true, "show_performance_overlay",
+        Settings::Setting<bool> show_performance_overlay{linkage, false, "show_performance_overlay",
                                                          Settings::Category::Overlay,
                                                          Settings::Specialization::Paired, true,
                                                          true};
@@ -167,7 +167,7 @@ namespace AndroidSettings {
 
         /// DEVICE/SOC OVERLAY
 
-        Settings::Setting<bool> show_soc_overlay{linkage, true, "show_soc_overlay",
+        Settings::Setting<bool> show_soc_overlay{linkage, false, "show_soc_overlay",
                                                  Settings::Category::Overlay,
                                                  Settings::Specialization::Paired, true, true};
         Settings::Setting<bool> show_build_id{linkage, true, "show_build_id",

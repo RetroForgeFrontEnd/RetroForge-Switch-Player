@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- RetroForge: what the player shows when opened with no game. RetroForge is the front end. -->
+<!-- RetroForge: "Switch settings", opened from RetroForge or the pause menu. RetroForge is the front end. -->
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/scroll_player_home"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -13,39 +12,71 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:maxWidth="640dp"
-        android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
         android:paddingVertical="24dp">
 
-        <ImageView
-            android:layout_width="112dp"
-            android:layout_height="112dp"
-            android:importantForAccessibility="no"
-            android:src="@drawable/ic_yuzu" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|center_vertical"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_yuzu" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/player_settings_switch"
+                    android:textColor="#FFFF8A1F"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    style="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/player_settings_word"
+                    android:textColor="#FF3ED6FF"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/button_close"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="end|center_vertical"
+                android:background="@drawable/bg_close_red"
+                android:clickable="true"
+                android:contentDescription="@string/player_close"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#FFFFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+        </FrameLayout>
 
         <com.google.android.material.textview.MaterialTextView
-            style="@style/TextAppearance.Material3.HeadlineSmall"
-            android:layout_width="wrap_content"
+            android:id="@+id/text_description"
+            style="@style/SynthwaveText.Body"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="@string/player_home_title"
-            android:textAlignment="center" />
-
-        <com.google.android.material.textview.MaterialTextView
-            style="@style/SynthwaveText.Body"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/player_home_description"
-            android:textAlignment="center" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/button_open_retroforge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/player_open_retroforge" />
+            android:visibility="gone" />
 
         <include
             android:id="@+id/card_keys"
@@ -56,12 +87,25 @@
             layout="@layout/card_player_option" />
 
         <include
+            android:id="@+id/card_perf_overlay"
+            layout="@layout/card_player_option" />
+
+        <include
             android:id="@+id/card_driver"
             layout="@layout/card_player_option" />
 
         <include
             android:id="@+id/card_about"
             layout="@layout/card_player_option" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/button_done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="20dp"
+            android:text="@string/player_done"
+            android:visibility="gone" />
 
     </LinearLayout>
 

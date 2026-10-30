@@ -57,6 +57,8 @@ import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.model.EmulationViewModel
 import org.yuzu.yuzu_emu.model.Game
 import org.yuzu.yuzu_emu.network.NetPlayManager
+import org.yuzu.yuzu_emu.ui.main.MainActivity
+import org.yuzu.yuzu_emu.utils.FileUtil
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.Log
 import org.yuzu.yuzu_emu.utils.MemoryUtil
@@ -125,6 +127,16 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         ThemeHelper.setTheme(this)
 
         super.onCreate(savedInstanceState)
+
+        if (savedInstanceState == null && needsKeysOrFirmware(intent)) {
+            startActivity(
+                Intent(this, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_SETUP, true)
+                    .putExtra(MainActivity.EXTRA_MISSING, true)
+            )
+            finish()
+            return
+        }
 
         InputHandler.updateControllerData()
         val players = NativeConfig.getInputSettings(true)
@@ -287,6 +299,13 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         handleSwapIntent(intent)
         nfcReader.onNewIntent(intent)
         InputHandler.updateControllerData()
+    }
+
+    /** RetroForge: retail games need keys and firmware; homebrew (.nro) runs without them. */
+    private fun needsKeysOrFirmware(intent: Intent): Boolean {
+        val uri = intent.data ?: return false
+        if (FileUtil.getFilename(uri).lowercase().endsWith(".nro")) return false
+        return !NativeLibrary.areKeysPresent() || !NativeLibrary.isFirmwareAvailable()
     }
 
     private fun isSwapIntent(intent: Intent): Boolean {
