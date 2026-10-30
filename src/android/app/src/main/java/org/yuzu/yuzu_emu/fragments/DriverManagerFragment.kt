@@ -34,6 +34,15 @@ import org.yuzu.yuzu_emu.model.HomeViewModel
 import org.yuzu.yuzu_emu.utils.FileUtil
 import org.yuzu.yuzu_emu.utils.GpuDriverHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
+import org.yuzu.yuzu_emu.utils.Log
+import org.yuzu.yuzu_emu.utils.RecommendedDriver
+import org.yuzu.yuzu_emu.utils.RecommendedDriver.canUseTurnip
+import android.widget.Toast
+import androidx.core.net.toUri
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.yuzu.yuzu_emu.databinding.DialogProgressBinding
 import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
 import org.yuzu.yuzu_emu.utils.collect
 import java.io.File
@@ -130,6 +139,7 @@ class DriverManagerFragment : Fragment() {
         }
 
         setInsets()
+        setUpRecommendedDriver()
 
         if (!GpuDriverHelper.supportsCustomDriverLoading()) {
             showDriverWarningDialog()
@@ -150,6 +160,115 @@ class DriverManagerFragment : Fragment() {
         driverViewModel.reloadDriverData()
         (binding.listDrivers.adapter as? DriverAdapter)
             ?.replaceList(driverViewModel.driverList.value)
+        updateRecommendedDriverInUse()
+    }
+
+    // RetroForge: "Recommended for your GPU" card
+    private var gpuModel: String? = null
+    private var recommendedText = ""
+
+    private fun setUpRecommendedDriver() {
+        gpuModel = runCatching {
+            GpuDriverHelper.hookLibPath?.let { GpuDriverHelper.getGpuModel(hookLibPath = it) }
+        }.getOrNull()
+        val family = RecommendedDriver.family(gpuModel)
+        val gpuName = gpuModel ?: getString(R.string.unknown)
+        Log.info("[RecommendedDriver] GPU: $gpuName, family: $family")
+        binding.cardRecommendedDriver.isVisible = true
+        if (!family.canUseTurnip || !GpuDriverHelper.supportsCustomDriverLoading()) {
+            recommendedText = getString(R.string.recommended_driver_not_adreno, gpuName)
+            binding.rowRecommendedButtons.isVisible = false
+            binding.buttonFetch.isVisible = false
+            binding.buttonInstall.isVisible = false
+        } else {
+            recommendedText = getString(
+                if (family == RecommendedDriver.Family.ADRENO_8XX) {
+                    R.string.recommended_driver_turnip_8xx
+                } else {
+                    R.string.recommended_driver_turnip
+                },
+                gpuName
+            )
+            binding.buttonUseRecommended.setOnClickListener { installRecommended(family) }
+            binding.buttonUseSystemDriver.setOnClickListener {
+                driverViewModel.onDriverSelected(0)
+                NativeConfig.saveGlobalConfig()
+                refreshDriverList()
+                Toast.makeText(
+                    requireContext(),
+                    R.string.recommended_driver_phone_selected,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+        updateRecommendedDriverInUse()
+    }
+
+    private fun updateRecommendedDriverInUse() {
+        val b = _binding ?: return
+        if (!b.cardRecommendedDriver.isVisible) return
+        val selected = GpuDriverHelper.customDriverSettingData
+        val inUse = selected.name?.let { "$it ${selected.version ?: ""}".trim() }
+            ?: getString(R.string.system_gpu_driver)
+        b.textRecommendedBody.text =
+            recommendedText + "\n\n" + getString(R.string.recommended_driver_in_use, inUse)
+    }
+
+    private fun installRecommended(family: RecommendedDriver.Family) {
+        val dialogBinding = DialogProgressBinding.inflate(layoutInflater)
+        dialogBinding.progressBar.isIndeterminate = true
+        dialogBinding.title.text = getString(R.string.installing_driver)
+        dialogBinding.status.text = getString(R.string.recommended_driver_looking)
+        val progressDialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = runCatching {
+                val download = withContext(Dispatchers.IO) { RecommendedDriver.find(family) }
+                    ?: throw IOException(getString(R.string.recommended_driver_none_found))
+                Log.info("[RecommendedDriver] ${download.release}: ${download.url}")
+                val driverPath = "${GpuDriverHelper.driverStoragePath}${download.fileName}"
+                if (!GpuDriverHelper.isDriverZipInstalledByName(download.fileName)) {
+                    dialogBinding.status.text = getString(R.string.downloading)
+                    val file = withContext(Dispatchers.IO) {
+                        RecommendedDriver.fetch(requireContext(), download)
+                    }
+                    dialogBinding.status.text = getString(R.string.installing)
+                    val copied = withContext(Dispatchers.IO) {
+                        GpuDriverHelper.copyDriverToInternalStorage(file.toUri())
+                    }
+                    file.delete()
+                    if (!copied) {
+                        throw IOException(getString(R.string.failed_install_driver, download.fileName))
+                    }
+                }
+                val metadata = GpuDriverHelper.getMetadataFromZip(File(driverPath))
+                driverViewModel.onDriverAdded(Pair(driverPath, metadata))
+                NativeConfig.saveGlobalConfig()
+                metadata.name ?: download.fileName
+            }
+            progressDialog.dismiss()
+            if (_binding == null) return@launch
+            refreshDriverList()
+            result.onSuccess {
+                Log.info("[RecommendedDriver] selected $it")
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.recommended_driver_installed, it),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }.onFailure {
+                Log.warning("[RecommendedDriver] failed: $it")
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.error_during_fetch)
+                    .setMessage(it.message ?: it.toString())
+                    .setPositiveButton(R.string.ok, null)
+                    .show()
+            }
+        }
     }
 
     private fun setInsets() =

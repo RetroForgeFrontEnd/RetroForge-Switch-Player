@@ -720,6 +720,17 @@
     <string name="driver_already_installed">Driver already installed</string>
     <string name="installed_label">%1$s (Installed)</string>
     <string name="system_gpu_driver">System GPU driver</string>
+    <string name="recommended_driver_title">Recommended for your GPU</string>
+    <string name="recommended_driver_turnip">%1$s: the Turnip driver (open-source, from the Mesa project) usually runs Switch games better than the phone’s own driver. Downloaded from its builder’s GitHub releases when you tap.</string>
+    <string name="recommended_driver_turnip_8xx">%1$s: Turnip for Adreno 8xx is new. Try it; if games look wrong, go back to the phone’s own driver.</string>
+    <string name="recommended_driver_not_adreno">%1$s uses the driver that came with the phone. Turnip drivers only work on Snapdragon (Adreno 600 and newer) GPUs, so there’s nothing to download here.</string>
+    <string name="recommended_driver_in_use">In use: %1$s</string>
+    <string name="recommended_driver_use">Download and use</string>
+    <string name="recommended_driver_use_phone">Use phone’s own driver</string>
+    <string name="recommended_driver_looking">Finding the newest Turnip build…</string>
+    <string name="recommended_driver_none_found">Couldn’t find a Turnip build right now. Check the internet connection and try again.</string>
+    <string name="recommended_driver_installed">%1$s installed and selected</string>
+    <string name="recommended_driver_phone_selected">Using the phone’s own driver</string>
     <string name="installing_driver">Installing driver…</string>
 
     <!-- GPU driver fetcher -->

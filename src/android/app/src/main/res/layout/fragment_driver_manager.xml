@@ -28,6 +28,60 @@
                 app:navigationIcon="@drawable/ic_back"
                 app:title="@string/gpu_driver_manager" />
 
+            <!-- RetroForge: recommended Turnip driver for this GPU, one tap to get it or go back to the phone's own -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_recommended_driver"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/text_recommended_title"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/recommended_driver_title" />
+
+                    <TextView
+                        android:id="@+id/text_recommended_body"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp" />
+
+                    <LinearLayout
+                        android:id="@+id/row_recommended_buttons"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_use_recommended"
+                            style="@style/EdenButton.Primary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/recommended_driver_use" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/button_use_system_driver"
+                            style="@style/EdenButton.Secondary"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/recommended_driver_use_phone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </com.google.android.material.appbar.AppBarLayout>
 
         <androidx.recyclerview.widget.RecyclerView
