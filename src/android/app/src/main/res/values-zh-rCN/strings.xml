@@ -391,7 +391,6 @@
     <!-- About screen strings -->
     <string name="gaia_is_not_real">Gaia 不真实</string>
     <string name="copied_to_clipboard">已复制到剪贴板</string>
-    <string name="about_app_description">一款开源的 Switch 模拟器</string>
     <string name="contributors">贡献者</string>
     <string name="contributors_description">Eden Android 版的诞生离不开这些人的支持</string>
     <string name="licenses_description">Android 版 Eden 离不开这些项目的支持</string>

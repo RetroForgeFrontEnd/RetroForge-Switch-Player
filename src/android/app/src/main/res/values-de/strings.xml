@@ -380,7 +380,6 @@ Wirklich fortfahren?</string>
     <!-- About screen strings -->
     <string name="gaia_is_not_real">Gaia ist nicht real</string>
     <string name="copied_to_clipboard">In die Zwischenablage kopiert</string>
-    <string name="about_app_description">Ein quelloffener Switch-Emulator</string>
     <string name="contributors">Beitragende</string>
     <string name="licenses_description">Projekte, die Eden für Android möglich machen </string>
     <string name="build">Build</string>

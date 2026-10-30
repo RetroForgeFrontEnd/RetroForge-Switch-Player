@@ -59,7 +59,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.eden.eden_emulator"
+        applicationId = "com.retroforge.switchplayer"
         minSdk = 24
         targetSdk = 36
         versionName = getGitVersion()
@@ -156,10 +156,9 @@ android {
                 "proguard-rules.pro"
             )
 
-            manifestPlaceholders += mapOf("appNameSuffix" to " Debug Release")
+            manifestPlaceholders += mapOf("appNameSuffix" to "")
 
             versionNameSuffix = "-relWithDebInfo"
-            applicationIdSuffix = ".relWithDebInfo"
             isJniDebuggable = true
         }
 
@@ -184,8 +183,8 @@ android {
             dimension = "version"
             isDefault = true
 
-            manifestPlaceholders += mapOf("appNameBase" to "Eden")
-            resValue("string", "app_name_suffixed", "Eden")
+            manifestPlaceholders += mapOf("appNameBase" to "RetroForge Switch Player")
+            resValue("string", "app_name_suffixed", "RetroForge Switch Player")
 
             ndk {
                 abiFilters += listOf("arm64-v8a")
@@ -257,12 +256,12 @@ android {
     }
 
     productFlavors.all {
-        val currentName = manifestPlaceholders["appNameBase"] as? String ?: "Eden"
+        val currentName = manifestPlaceholders["appNameBase"] as? String ?: "RetroForge Switch Player"
         val suffix = if (isNightly) " Nightly" else ""
 
         // apply nightly suffix I/A
         resValue("string", "app_name_suffixed", "$currentName$suffix")
-        resValue("string", "app_name", "Eden$suffix")
+        resValue("string", "app_name", "RetroForge Switch Player$suffix")
     }
 }
 

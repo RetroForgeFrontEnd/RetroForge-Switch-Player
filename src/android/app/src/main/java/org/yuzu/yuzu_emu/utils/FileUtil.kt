@@ -217,9 +217,13 @@ object FileUtil {
             c!!.moveToNext()
             filename = c.getString(0)
         } catch (e: Exception) {
-            Log.error("[FileUtil]: Cannot get file size, error: " + e.message)
+            Log.error("[FileUtil]: Cannot get file name for $uri, error: $e")
         } finally {
             closeQuietly(c)
+        }
+        if (filename.isEmpty()) {
+            // RetroForge: fall back to the name in the URI itself (document ids end in the file name)
+            filename = uri.lastPathSegment?.substringAfterLast('/') ?: ""
         }
         return filename
     }
