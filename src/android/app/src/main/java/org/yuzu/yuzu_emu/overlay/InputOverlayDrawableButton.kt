@@ -55,7 +55,7 @@ class InputOverlayDrawableButton(
 
     init {
         this.defaultStateBitmap = BitmapDrawable(res, defaultStateBitmap)
-        this.pressedStateBitmap = BitmapDrawable(res, pressedStateBitmap)
+        this.pressedStateBitmap = PressedHighlight.of(res, defaultStateBitmap)
         trackId = -1
         width = this.defaultStateBitmap.intrinsicWidth
         height = this.defaultStateBitmap.intrinsicHeight
@@ -76,6 +76,9 @@ class InputOverlayDrawableButton(
             motionEvent == MotionEvent.ACTION_DOWN || motionEvent == MotionEvent.ACTION_POINTER_DOWN
         val isActionUp =
             motionEvent == MotionEvent.ACTION_UP || motionEvent == MotionEvent.ACTION_POINTER_UP
+        // RetroForge: the last finger lifting, or a cancelled gesture (palm rejection, a system swipe), means no
+        // finger is on the screen, so the control lets go whichever pointer it was tracking; it used to stay held
+        val isCancel = motionEvent == MotionEvent.ACTION_CANCEL || motionEvent == MotionEvent.ACTION_UP
 
         if (isActionDown) {
             if (!bounds.contains(xPosition, yPosition)) {
@@ -86,8 +89,8 @@ class InputOverlayDrawableButton(
             return true
         }
 
-        if (isActionUp) {
-            if (trackId != pointerId) {
+        if (isActionUp || isCancel) {
+            if (if (isCancel) trackId == -1 else trackId != pointerId) {
                 return false
             }
             pressedState = false

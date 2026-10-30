@@ -17,6 +17,7 @@ import android.graphics.drawable.VectorDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.text.Editable
 import android.text.InputType
 import android.util.AttributeSet
@@ -223,6 +224,34 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
         }
     }
 
+    // RetroForge: games read the pad once a frame, so a tap that goes down and up between two frames was lost.
+    // A release that comes sooner than MIN_PRESS_MS after its press is held back until that much time has passed.
+    private val pressStartedAt = HashMap<NativeButton, Long>()
+    private val pendingReleases = HashMap<NativeButton, Runnable>()
+
+    private fun sendOverlayButton(port: Int, button: NativeButton, status: Int) {
+        if (status == NativeInput.ButtonState.PRESSED) {
+            pendingReleases.remove(button)?.let { removeCallbacks(it) }
+            pressStartedAt.getOrPut(button) { SystemClock.uptimeMillis() }
+            NativeInput.onOverlayButtonEvent(port, button, status)
+            return
+        }
+        // The d-pad repeats "released" for every direction it isn't on; leave a release that is already waiting
+        if (pendingReleases.containsKey(button)) return
+        val startedAt = pressStartedAt.remove(button)
+        val held = if (startedAt == null) MIN_PRESS_MS else SystemClock.uptimeMillis() - startedAt
+        if (held >= MIN_PRESS_MS) {
+            NativeInput.onOverlayButtonEvent(port, button, status)
+            return
+        }
+        val release = Runnable {
+            pendingReleases.remove(button)
+            NativeInput.onOverlayButtonEvent(port, button, status)
+        }
+        pendingReleases[button] = release
+        postDelayed(release, MIN_PRESS_MS - held)
+    }
+
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         try {
             touchEventListener?.invoke(event)
@@ -230,6 +259,14 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
 
         if (inEditMode) {
             return onTouchWhileEditing(event)
+        }
+
+        // RetroForge: a first finger going down means nothing else is touching the screen, so anything still held
+        // missed its lift (a dropped or mixed-up touch stream); let it go before handling the new press
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            val cancel = MotionEvent.obtain(event).apply { action = MotionEvent.ACTION_CANCEL }
+            onTouch(v, cancel)
+            cancel.recycle()
         }
 
         var shouldUpdateView = false
@@ -242,7 +279,7 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             if (!button.updateStatus(event)) {
                 continue
             }
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 button.button,
                 button.status
@@ -255,22 +292,22 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             if (!dpad.updateStatus(event, BooleanSetting.DPAD_SLIDE.getBoolean())) {
                 continue
             }
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 dpad.up,
                 dpad.upStatus
             )
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 dpad.down,
                 dpad.downStatus
             )
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 dpad.left,
                 dpad.leftStatus
             )
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 dpad.right,
                 dpad.rightStatus
@@ -289,7 +326,7 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
                 joystick.xAxis,
                 joystick.realYAxis
             )
-            NativeInput.onOverlayButtonEvent(
+            sendOverlayButton(
                 playerIndex,
                 joystick.button,
                 joystick.buttonStatus
@@ -1002,6 +1039,8 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
     }
 
     companion object {
+        private const val MIN_PRESS_MS = 80L
+
 
         // Increase this number every time there is a breaking change to every overlay layout
         const val OVERLAY_VERSION = 1

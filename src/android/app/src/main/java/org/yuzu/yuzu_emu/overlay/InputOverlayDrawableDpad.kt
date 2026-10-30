@@ -62,8 +62,9 @@ class InputOverlayDrawableDpad(
 
     init {
         this.defaultStateBitmap = BitmapDrawable(res, defaultStateBitmap)
-        this.pressedOneDirectionStateBitmap = BitmapDrawable(res, pressedOneDirectionStateBitmap)
-        this.pressedTwoDirectionsStateBitmap = BitmapDrawable(res, pressedTwoDirectionsStateBitmap)
+        // RetroForge: the whole pad lights up while held (the cross is symmetric, so the rotations below still fit)
+        this.pressedOneDirectionStateBitmap = PressedHighlight.of(res, defaultStateBitmap)
+        this.pressedTwoDirectionsStateBitmap = PressedHighlight.of(res, defaultStateBitmap)
         width = this.defaultStateBitmap.intrinsicWidth
         height = this.defaultStateBitmap.intrinsicHeight
         trackId = -1
@@ -79,14 +80,17 @@ class InputOverlayDrawableDpad(
             motionEvent == MotionEvent.ACTION_DOWN || motionEvent == MotionEvent.ACTION_POINTER_DOWN
         val isActionUp =
             motionEvent == MotionEvent.ACTION_UP || motionEvent == MotionEvent.ACTION_POINTER_UP
+        // RetroForge: the last finger lifting, or a cancelled gesture (palm rejection, a system swipe), means no
+        // finger is on the screen, so the control lets go whichever pointer it was tracking; it used to stay held
+        val isCancel = motionEvent == MotionEvent.ACTION_CANCEL || motionEvent == MotionEvent.ACTION_UP
         if (isActionDown) {
             if (!bounds.contains(xPosition, yPosition)) {
                 return false
             }
             trackId = pointerId
         }
-        if (isActionUp) {
-            if (trackId != pointerId) {
+        if (isActionUp || isCancel) {
+            if (if (isCancel) trackId == -1 else trackId != pointerId) {
                 return false
             }
             trackId = -1

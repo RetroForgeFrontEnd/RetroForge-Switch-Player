@@ -91,7 +91,7 @@ class InputOverlayDrawableJoystick(
     init {
         outerBitmap = BitmapDrawable(res, bitmapOuter)
         defaultStateInnerBitmap = BitmapDrawable(res, bitmapInnerDefault)
-        pressedStateInnerBitmap = BitmapDrawable(res, bitmapInnerPressed)
+        pressedStateInnerBitmap = PressedHighlight.of(res, bitmapInnerDefault)
         boundsBoxBitmap = BitmapDrawable(res, bitmapOuter)
         width = bitmapOuter.width
         height = bitmapOuter.height
@@ -121,6 +121,9 @@ class InputOverlayDrawableJoystick(
             motionEvent == MotionEvent.ACTION_DOWN || motionEvent == MotionEvent.ACTION_POINTER_DOWN
         val isActionUp =
             motionEvent == MotionEvent.ACTION_UP || motionEvent == MotionEvent.ACTION_POINTER_UP
+        // RetroForge: the last finger lifting, or a cancelled gesture (palm rejection, a system swipe), means no
+        // finger is on the screen, so the control lets go whichever pointer it was tracking; it used to stay held
+        val isCancel = motionEvent == MotionEvent.ACTION_CANCEL || motionEvent == MotionEvent.ACTION_UP
 
         if (isActionDown) {
             if (!bounds.contains(xPosition, yPosition)) {
@@ -139,8 +142,8 @@ class InputOverlayDrawableJoystick(
             trackId = pointerId
         }
 
-        if (isActionUp) {
-            if (trackId != pointerId) {
+        if (isActionUp || isCancel) {
+            if (if (isCancel) trackId == -1 else trackId != pointerId) {
                 return false
             }
             pressedState = false
