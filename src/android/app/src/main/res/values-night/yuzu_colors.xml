@@ -240,8 +240,8 @@
     <color name="eden_surface_variant">#222B40</color> <!-- Elevated surface -->
 
     <!-- Text Colors - High contrast for readability -->
-    <color name="eden_on_background">#E6ECF7</color> <!-- Pure white text -->
-    <color name="eden_on_surface">#E6ECF7</color> <!-- Pure white text -->
+    <color name="eden_on_background">#3ED6FF</color> <!-- RetroForge logo cyan ("FORGE") -->
+    <color name="eden_on_surface">#3ED6FF</color> <!-- RetroForge logo cyan ("FORGE") -->
     <color name="eden_on_primary">#1A0A00</color> <!-- White on neon -->
     <color name="eden_on_secondary">#001F29</color> <!-- Black on cyan -->
 
