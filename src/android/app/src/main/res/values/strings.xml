@@ -296,8 +296,9 @@
     <string name="install_amiibo_keys">Install Amiibo keys</string>
     <string name="install_amiibo_keys_description">Required to use Amiibo in game</string>
     <string name="gpu_driver_fetcher">GPU driver fetcher</string>
-    <string name="gpu_driver_manager">GPU driver manager</string>
-    <string name="install_gpu_driver_description">Install alternative drivers for potentially better performance or accuracy</string>
+    <string name="gpu_driver_manager">GPU driver</string>
+    <string name="install_gpu_driver_description">Turnip drivers for better performance, or the phone’s own driver</string>
+    <string name="turnip_snapdragon_only">Turnip drivers are for Snapdragon (Adreno) devices only</string>
     <string name="advanced_settings">Advanced settings</string>
     <string name="settings_description">Configure emulator settings</string>
     <string name="search_recently_played">Recently played</string>

@@ -176,7 +176,7 @@ class DriverManagerFragment : Fragment() {
         Log.info("[RecommendedDriver] GPU: $gpuName, family: $family")
         binding.cardRecommendedDriver.isVisible = true
         if (!family.canUseTurnip || !GpuDriverHelper.supportsCustomDriverLoading()) {
-            recommendedText = getString(R.string.recommended_driver_not_adreno, gpuName)
+            recommendedText = getString(R.string.turnip_snapdragon_only)
             binding.rowRecommendedButtons.isVisible = false
             binding.buttonFetch.isVisible = false
             binding.buttonInstall.isVisible = false

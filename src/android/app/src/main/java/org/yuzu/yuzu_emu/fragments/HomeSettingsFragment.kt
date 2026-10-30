@@ -138,7 +138,12 @@ class HomeSettingsFragment : Fragment() {
             add(
                 HomeSetting(
                     R.string.gpu_driver_manager,
-                    R.string.install_gpu_driver_description,
+                    // RetroForge: shown on every device, greyed out with a short note where Turnip can't load
+                    if (GpuDriverHelper.isAdrenoGpu()) {
+                        R.string.install_gpu_driver_description
+                    } else {
+                        R.string.turnip_snapdragon_only
+                    },
                     R.drawable.ic_build,
                     {
                         val action = HomeNavigationDirections.actionGlobalSettingsSubscreenActivity(
@@ -147,9 +152,9 @@ class HomeSettingsFragment : Fragment() {
                         )
                         binding.root.findNavController().navigate(action)
                     },
-                    { true },
-                    R.string.custom_driver_not_supported,
-                    R.string.custom_driver_not_supported_description,
+                    { GpuDriverHelper.isAdrenoGpu() },
+                    R.string.gpu_driver_manager,
+                    R.string.turnip_snapdragon_only,
                     driverViewModel.selectedDriverTitle
                 )
             )

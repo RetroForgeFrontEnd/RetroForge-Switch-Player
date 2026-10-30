@@ -67,7 +67,6 @@ class DriverFetcherFragment : Fragment() {
 
     private val repoList: List<DriverRepo> = listOf(
         DriverRepo("Mr. Purple Turnip", "MrPurple666/purple-turnip", 0),
-        DriverRepo("GameHub Adreno 8xx", "crueter/GameHub-8Elite-Drivers", 1),
         DriverRepo("KIMCHI Turnip", "K11MCH1/AdrenoToolsDrivers", 2, true, SortMode.PublishTime),
         DriverRepo("Weab-Chan Freedreno", "Weab-chan/freedreno_turnip-CI", 3),
         DriverRepo("Whitebelyash Turnip", "whitebelyash/freedreno_turnip-CI", sort=4, false, SortMode.PublishTime),
@@ -81,7 +80,7 @@ class DriverFetcherFragment : Fragment() {
         IntRange(640, 699) to "Mr. Purple T19",
         IntRange(700, 710) to "KIMCHI 25.2.0_r5",
         IntRange(711, 799) to "Mr. Purple T23",
-        IntRange(800, 899) to "GameHub Adreno 8xx",
+        IntRange(800, 899) to "KIMCHI Turnip a8xx",
         IntRange(900, Int.MAX_VALUE) to "Unsupported"
     )
 
@@ -179,6 +178,11 @@ class DriverFetcherFragment : Fragment() {
 
                             val body = response.body?.string() ?: return@withContext
                             releases = Release.fromJsonArray(body, useTagName, sortMode)
+                            // RetroForge: open-source Turnip only, not Qualcomm's own drivers
+                            releases.removeAll {
+                                it.titleName.contains("Qualcomm", true) ||
+                                    it.artifacts.all { a -> a.name.contains("Qualcomm", true) }
+                            }
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
