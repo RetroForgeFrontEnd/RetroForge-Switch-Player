@@ -7,6 +7,19 @@
 -->
 <!-- lang: en-GB -->
 
+# RetroForge Switch Player
+
+**A companion app for [RetroForge](https://github.com/RetroForgeFrontEnd/RetroForge), not a standalone emulator.** Install RetroForge first, then the APK from [Releases](../../releases). RetroForge finds your Switch games and opens them in this player. The player has no app icon or game list of its own.
+
+- Built on [Eden](https://git.eden-emu.dev/eden-emu/eden) (GPL-3.0), tuned for phones: shaders build in the background, resolution suits the phone's memory, a RetroForge pause menu, and Switch settings for keys, firmware, the performance overlay and the GPU driver. What changed from Eden and why: [docs/RetroForge.md](docs/RetroForge.md).
+- **You need your own keys and firmware, dumped from your own Switch.** No keys, firmware or games are included or linked here, and none will be.
+- Android 11 or newer, 64-bit ARM. Frame rates on a Galaxy S22: [SWITCH_FPS.md](https://github.com/RetroForgeFrontEnd/RetroForge/blob/main/docs/SWITCH_FPS.md).
+
+Licence: GPL-3.0-or-later, as Eden. All credit for the emulator itself goes to the Eden and yuzu teams; Eden's own README follows.
+
+---
+
+
 <h1 align="center">
   <br>
   <a href="https://git.eden-emu.dev/eden-emu/eden"><img src="./dist/qt_themes/default/icons/256x256/eden.png" alt="Eden" width="200"></a>
