@@ -192,8 +192,32 @@ object DirectoryInitialization {
             }
         }
 
+        // RetroForge Switch Player defaults, applied once (new installs and existing ones): shaders build in the
+        // background so new scenes don't stutter, and phones with less memory draw at a lower resolution.
+        if (!preferences.getBoolean(RETROFORGE_DEFAULTS, false)) {
+            BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.setBoolean(true)
+            BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.setBoolean(true)
+            IntSetting.RENDERER_RESOLUTION.setInt(resolutionForDevice())
+            preferences.edit().putBoolean(RETROFORGE_DEFAULTS, true).apply()
+            saveConfig = true
+        }
+
         if (saveConfig) {
             NativeConfig.saveGlobalConfig()
+        }
+    }
+
+    private const val RETROFORGE_DEFAULTS = "retroforge_defaults_v1"
+
+    /** ResolutionSetup index: 1 = 0.5×, 2 = 0.75×, 3 = 1× (the Switch's own handheld resolution). */
+    private fun resolutionForDevice(): Int {
+        val memory = android.app.ActivityManager.MemoryInfo()
+        YuzuApplication.appContext.getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(memory)
+        val gb = memory.totalMem / (1024.0 * 1024 * 1024)
+        return when {
+            gb < 4.5 -> 1 // 4 GB phones (Android reports a little under the label)
+            gb < 6.5 -> 2 // 6 GB
+            else -> 3
         }
     }
 
