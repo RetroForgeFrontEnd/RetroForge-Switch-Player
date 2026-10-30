@@ -3,21 +3,21 @@
 
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
-    id("com.android.application") version "8.9.1" apply false
-    id("com.android.library") version "8.1.4" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.20" apply false
+    id("com.android.application") version "9.4.1" apply false
+    id("com.android.library") version "9.4.1" apply false
+    id("org.jetbrains.kotlin.android") version "2.4.21" apply false
 }
 
 tasks.register("clean").configure {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 buildscript {
-    val agp_version by extra("8.9.1")
+    val agp_version by extra("9.4.1")
     repositories {
         google()
     }
     dependencies {
-        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.8.9")
+        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.9.6")
     }
 }

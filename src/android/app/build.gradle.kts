@@ -7,18 +7,14 @@
 // import android.annotation.SuppressLint
 import com.android.build.gradle.api.ApplicationVariant
 import kotlin.collections.setOf
-import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
-import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import org.gradle.api.tasks.Copy
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
-    kotlin("plugin.serialization") version "1.9.20"
+    kotlin("plugin.serialization") version "2.4.21"
     id("androidx.navigation.safeargs.kotlin")
-    id("org.jlleitschuh.gradle.ktlint") version "11.4.0"
-    id("com.github.triplet.play") version "3.8.6"
     id("idea")
 }
 
@@ -43,6 +39,8 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
+        resValues = true
     }
 
     compileOptions {
@@ -50,9 +48,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 
     packaging {
         // This is necessary for libadrenotools custom driver loading
@@ -281,43 +276,10 @@ idea {
     }
 }
 
-tasks.register<Delete>("ktlintReset", fun Delete.() {
-    delete(File(layout.buildDirectory.toString() + File.separator + "intermediates/ktLint"))
-})
-
-val showFormatHelp = {
-    logger.lifecycle(
-        "If this check fails, please try running \"gradlew ktlintFormat\" for automatic " +
-                "codestyle fixes"
-    )
-}
-tasks.getByPath("ktlintKotlinScriptCheck").doFirst { showFormatHelp.invoke() }
-tasks.getByPath("ktlintMainSourceSetCheck").doFirst { showFormatHelp.invoke() }
-tasks.getByPath("loadKtlintReporters").dependsOn("ktlintReset")
-
-ktlint {
-    version.set("0.47.1")
-    android.set(true)
-    ignoreFailures.set(false)
-    disabledRules.set(
-        setOf(
-            "no-wildcard-imports",
-            "package-name",
-            "import-ordering"
-        )
-    )
-    reporters {
-        reporter(ReporterType.CHECKSTYLE)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
-}
-
-play {
-    val keyPath = System.getenv("SERVICE_ACCOUNT_KEY_PATH")
-    if (keyPath != null) {
-        serviceAccountCredentials.set(File(keyPath))
-    }
-    track.set(System.getenv("STORE_TRACK") ?: "internal")
-    releaseStatus.set(ReleaseStatus.COMPLETED)
 }
 
 dependencies {
@@ -377,36 +339,4 @@ fun getGitVersion(): String {
         gitVersion
     }
     return versionName.ifEmpty { "0.0" }
-}
-
-afterEvaluate {
-    val artifactsDir = layout.projectDirectory.dir("${edenDir}/artifacts")
-    val outputsDir = layout.buildDirectory.dir("outputs").get()
-
-    android.applicationVariants.forEach { variant ->
-        val variantName = variant.name
-        val variantTask = variantName.replaceFirstChar { it.uppercaseChar() }
-
-        val flavor = variant.flavorName
-        val type = variant.buildType.name
-
-        val baseName = "app-$flavor-$type"
-
-        val apkFile = outputsDir.file("apk/$flavor/$type/$baseName.apk")
-        val aabFile = outputsDir.file("bundle/$variantName/$baseName.aab")
-
-        val taskName = "copy${variantTask}Outputs"
-
-        tasks.register<Copy>(taskName) {
-            group = "publishing"
-            description = "Copy APK and AAB for $variantName to $artifactsDir"
-
-            from(apkFile)
-            from(aabFile)
-            into(artifactsDir)
-
-            dependsOn("assemble${variantTask}")
-            dependsOn("bundle${variantTask}")
-        }
-    }
 }
