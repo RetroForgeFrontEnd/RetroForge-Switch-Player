@@ -68,6 +68,8 @@ import kotlinx.coroutines.withContext
 import org.yuzu.yuzu_emu.HomeNavigationDirections
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
+import org.yuzu.yuzu_emu.features.settings.model.ByteSetting
+import org.yuzu.yuzu_emu.overlay.PauseMenu
 import org.yuzu.yuzu_emu.activities.EmulationActivity
 import org.yuzu.yuzu_emu.databinding.DialogOverlayAdjustBinding
 import org.yuzu.yuzu_emu.databinding.FragmentEmulationBinding
@@ -685,6 +687,14 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         binding.surfaceEmulation.holder.addCallback(this)
         binding.doneControlConfig.setOnClickListener { stopConfiguringControls() }
 
+        pauseMenu = PauseMenu(binding.pauseMenuContainer) { onPauseMenuClosed() }
+        PauseMenu.attachEdgeSwipe(binding.edgeSwipeLeft, fromLeft = true) {
+            emulationViewModel.setDrawerOpen(true)
+        }
+        PauseMenu.attachEdgeSwipe(binding.edgeSwipeRight, fromLeft = false) {
+            emulationViewModel.setDrawerOpen(true)
+        }
+
         binding.drawerLayout.addDrawerListener(object : DrawerListener {
             override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
                 binding.surfaceInputOverlay.dispatchTouchEvent(
@@ -700,7 +710,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             }
 
             override fun onDrawerOpened(drawerView: View) {
-                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 binding.inGameMenu.requestFocus()
                 emulationViewModel.setDrawerOpen(true)
                 updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
@@ -712,7 +722,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             }
 
             override fun onDrawerClosed(drawerView: View) {
-                binding.drawerLayout.setDrawerLockMode(IntSetting.LOCK_DRAWER.getInt())
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 emulationViewModel.setDrawerOpen(false)
             }
 
@@ -906,7 +916,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     if (!NativeLibrary.isRunning()) {
                         return
                     }
-                    emulationViewModel.setDrawerOpen(!binding.drawerLayout.isOpen)
+                    emulationViewModel.setDrawerOpen(pauseMenu?.isShowing != true)
                 }
             }
         )
@@ -949,7 +959,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
         emulationViewModel.emulationStarted.collect(viewLifecycleOwner) {
             if (it) {
-                binding.drawerLayout.setDrawerLockMode(IntSetting.LOCK_DRAWER.getInt())
+                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 ViewUtils.showView(binding.surfaceInputOverlay)
                 ViewUtils.hideView(binding.loadingIndicator)
 
@@ -993,12 +1003,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             }
         }
         emulationViewModel.drawerOpen.collect(viewLifecycleOwner) {
-            if (it) {
-                binding.drawerLayout.open()
-                binding.inGameMenu.requestFocus()
-            } else {
-                binding.drawerLayout.close()
-            }
+            // RetroForge: Back, a controller's menu button and edge swipes open RetroForge's pause menu
+            if (it) openPauseMenu() else pauseMenu?.close()
         }
         emulationViewModel.programChanged.collect(viewLifecycleOwner) {
             if (it != 0) {
@@ -1205,6 +1211,234 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         val values = resources.getIntArray(R.array.rendererScalingFilterValues)
         val fsrIndex = names.indexOf(getString(R.string.scaling_filter_fsr))
         return if (fsrIndex in values.indices) values[fsrIndex] else null
+    }
+
+    // RetroForge's pause menu: the same menu, pages and look as RetroForge's own players.
+    private enum class MenuPage { MAIN, PICTURE, SOUND_CONTROLS, EMULATOR }
+
+    private var pauseMenu: PauseMenu? = null
+    private var menuPage = MenuPage.MAIN
+    private var pausedByMenu = false
+
+    private fun openPauseMenu() {
+        val menu = pauseMenu ?: return
+        if (menu.isShowing) return
+        if (_binding == null || !NativeLibrary.isRunning()) {
+            emulationViewModel.setDrawerOpen(false)
+            return
+        }
+        if (!emulationState.isPaused) {
+            pauseEmulationAndCaptureFrame()
+            pausedByMenu = true
+        }
+        if (shouldUseCustom) {
+            SettingsFile.loadCustomConfig(game!!)
+        }
+        menuPage = MenuPage.MAIN
+        menu.show(back = { showMenuPage(MenuPage.MAIN) }) { buildMenuPage() }
+    }
+
+    private fun onPauseMenuClosed() {
+        if (shouldUseCustom) {
+            NativeConfig.unloadPerGameConfig()
+        }
+        if (pausedByMenu && _binding != null) {
+            resumeEmulationFromUi()
+        }
+        pausedByMenu = false
+        emulationViewModel.setDrawerOpen(false)
+    }
+
+    private fun showMenuPage(page: MenuPage) {
+        menuPage = page
+        pauseMenu?.notice = null
+        pauseMenu?.refresh()
+    }
+
+    private fun saveMenuSetting() {
+        if (shouldUseCustom) {
+            NativeConfig.savePerGameConfig()
+        } else {
+            NativeConfig.saveGlobalConfig()
+        }
+        pauseMenu?.refresh()
+    }
+
+    private fun onOff(on: Boolean) = getString(if (on) R.string.player_menu_on else R.string.player_menu_off)
+
+    /** The label of [setting]'s current value, from the names and values arrays it is picked from. */
+    private fun choiceLabel(setting: IntSetting, namesId: Int, valuesId: Int): String {
+        val names = resources.getStringArray(namesId)
+        val index = resources.getIntArray(valuesId).indexOf(setting.getInt())
+        return names.getOrElse(index) { names.first() }
+    }
+
+    /** Moves [setting] on to its next value, wrapping round to the first. */
+    private fun nextChoice(setting: IntSetting, valuesId: Int) {
+        val values = resources.getIntArray(valuesId)
+        val index = values.indexOf(setting.getInt())
+        setting.setInt(values[(index + 1) % values.size])
+        saveMenuSetting()
+    }
+
+    private fun choiceItem(labelId: Int, setting: IntSetting, namesId: Int, valuesId: Int) =
+        PauseMenu.Item(getString(labelId, choiceLabel(setting, namesId, valuesId))) {
+            nextChoice(setting, valuesId)
+        }
+
+    private fun buildMenuPage(): PauseMenu.Page = when (menuPage) {
+        MenuPage.MAIN -> PauseMenu.Page(
+            title = game?.title ?: getString(R.string.app_name),
+            subtitle = getString(R.string.player_menu_paused),
+            isMain = true,
+            items = listOf(
+                PauseMenu.Item(getString(R.string.player_menu_resume)) { pauseMenu?.close() },
+                PauseMenu.Item(
+                    getString(R.string.player_menu_fast_forward, onOff(NativeLibrary.isTurboMode()))
+                ) {
+                    NativeLibrary.setTurboSpeedLimit(!NativeLibrary.isTurboMode())
+                    pauseMenu?.refresh()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_picture)) {
+                    showMenuPage(MenuPage.PICTURE)
+                },
+                PauseMenu.Item(getString(R.string.player_menu_sound_controls)) {
+                    showMenuPage(MenuPage.SOUND_CONTROLS)
+                },
+                PauseMenu.Item(getString(R.string.player_menu_emulator)) {
+                    showMenuPage(MenuPage.EMULATOR)
+                },
+                PauseMenu.Item(getString(R.string.player_menu_quit)) { quitToRetroForge() }
+            )
+        )
+
+        MenuPage.PICTURE -> {
+            val items = mutableListOf(
+                choiceItem(
+                    R.string.player_menu_resolution,
+                    IntSetting.RENDERER_RESOLUTION,
+                    R.array.rendererResolutionNames,
+                    R.array.rendererResolutionValues
+                ),
+                choiceItem(
+                    R.string.player_menu_upscaling,
+                    IntSetting.RENDERER_SCALING_FILTER,
+                    R.array.rendererScalingFilterNames,
+                    R.array.rendererScalingFilterValues
+                )
+            )
+            if (isFsrScalingFilterSelected()) {
+                items += PauseMenu.Item(
+                    getString(R.string.player_menu_sharpness, IntSetting.FSR_SHARPENING_SLIDER.getInt())
+                ) {
+                    val next = (IntSetting.FSR_SHARPENING_SLIDER.getInt() / 25 + 1) * 25
+                    IntSetting.FSR_SHARPENING_SLIDER.setInt(if (next > 100) 0 else next)
+                    saveMenuSetting()
+                }
+            }
+            items += choiceItem(
+                R.string.player_menu_anti_aliasing,
+                IntSetting.RENDERER_ANTI_ALIASING,
+                R.array.rendererAntiAliasingNames,
+                R.array.rendererAntiAliasingValues
+            )
+            items += choiceItem(
+                R.string.player_menu_screen_shape,
+                IntSetting.RENDERER_ASPECT_RATIO,
+                R.array.rendererAspectRatioNames,
+                R.array.rendererAspectRatioValues
+            )
+            items += PauseMenu.Item(
+                getString(R.string.player_menu_docked, onOff(BooleanSetting.USE_DOCKED_MODE.getBoolean()))
+            ) {
+                BooleanSetting.USE_DOCKED_MODE.setBoolean(!BooleanSetting.USE_DOCKED_MODE.getBoolean())
+                saveMenuSetting()
+            }
+            items += PauseMenu.Item(
+                getString(R.string.player_menu_show_fps, onOff(isAnyStatsOverlayShown()))
+            ) {
+                val show = !isAnyStatsOverlayShown()
+                BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(show)
+                BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(show)
+                updateShowStatsOverlay()
+                updateSocOverlay()
+                NativeConfig.saveGlobalConfig()
+                pauseMenu?.refresh()
+            }
+            PauseMenu.Page(getString(R.string.player_menu_picture_title), items = items)
+        }
+
+        MenuPage.SOUND_CONTROLS -> PauseMenu.Page(
+            title = getString(R.string.player_menu_sound_controls_title),
+            items = listOf(
+                PauseMenu.Item(
+                    getString(R.string.player_menu_volume, ByteSetting.AUDIO_VOLUME.getByte().toInt())
+                ) {
+                    val volume = ByteSetting.AUDIO_VOLUME.getByte().toInt()
+                    val next = if (volume >= 100) 0 else (volume / 25 + 1) * 25
+                    ByteSetting.AUDIO_VOLUME.setByte(next.coerceAtMost(100).toByte())
+                    saveMenuSetting()
+                },
+                PauseMenu.Item(
+                    getString(
+                        R.string.player_menu_touch_controls,
+                        onOff(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
+                    )
+                ) {
+                    toggleOverlay(!BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
+                    NativeConfig.saveGlobalConfig()
+                    pauseMenu?.refresh()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_edit_touch)) {
+                    pauseMenu?.close()
+                    binding.surfaceInputOverlay.requestFocus()
+                    startConfiguringControls()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_remap)) {
+                    pauseMenu?.close()
+                    binding.root.findNavController().navigate(
+                        HomeNavigationDirections.actionGlobalSettingsActivity(
+                            null,
+                            Settings.MenuTag.SECTION_INPUT
+                        )
+                    )
+                }
+            )
+        )
+
+        MenuPage.EMULATOR -> PauseMenu.Page(
+            title = getString(R.string.player_menu_emulator_title),
+            items = listOf(
+                PauseMenu.Item(getString(R.string.player_game_settings)) {
+                    pauseMenu?.close()
+                    binding.root.findNavController().navigate(
+                        HomeNavigationDirections.actionGlobalSettingsActivity(
+                            args.game,
+                            Settings.MenuTag.SECTION_ROOT
+                        )
+                    )
+                },
+                choiceItem(
+                    R.string.player_menu_accuracy,
+                    IntSetting.RENDERER_ACCURACY,
+                    R.array.rendererAccuracyNames,
+                    R.array.rendererAccuracyValues
+                ),
+                PauseMenu.Item(getString(R.string.load_amiibo)) {
+                    pauseMenu?.close()
+                    handleLoadAmiiboSelection()
+                }
+            )
+        )
+    }
+
+    private fun quitToRetroForge() {
+        pausedByMenu = false
+        pauseMenu?.close()
+        clearPausedFrame()
+        emulationState.stop()
+        NativeConfig.reloadGlobalConfig()
+        emulationViewModel.setIsEmulationStopping(true)
     }
 
     private fun openQuickSettingsMenu() {

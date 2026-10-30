@@ -11,6 +11,8 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Point
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.VectorDrawable
@@ -55,6 +57,12 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
     View(context, attrs),
     OnTouchListener {
     private val overlayButtons: MutableSet<InputOverlayDrawableButton> = HashSet()
+
+    // RetroForge: every control gets a dark outline so it stays visible over bright games
+    private val outlinePaint = Paint().apply {
+        colorFilter = PorterDuffColorFilter(0xB4000000.toInt(), PorterDuff.Mode.SRC_IN)
+    }
+    private val outlineWidth = 2f * resources.displayMetrics.density
     private val overlayDpads: MutableSet<InputOverlayDrawableDpad> = HashSet()
     private val overlayJoysticks: MutableSet<InputOverlayDrawableJoystick> = HashSet()
     private val imeEditable = Editable.Factory.getInstance().newEditable("")
@@ -174,6 +182,22 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             drawGrid(canvas)
         }
 
+        // The controls drawn in black, nudged a little in eight directions, make the outline
+        val outline = canvas.saveLayer(null, outlinePaint)
+        for (dx in -1..1) {
+            for (dy in -1..1) {
+                if (dx == 0 && dy == 0) continue
+                canvas.save()
+                canvas.translate(dx * outlineWidth, dy * outlineWidth)
+                drawControls(canvas)
+                canvas.restore()
+            }
+        }
+        canvas.restoreToCount(outline)
+        drawControls(canvas)
+    }
+
+    private fun drawControls(canvas: Canvas) {
         for (button in overlayButtons) {
             button.draw(canvas)
         }

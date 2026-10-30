@@ -96,11 +96,12 @@ class PlayerHomeFragment : Fragment() {
             val insets = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
+            val gutter = (16 * resources.displayMetrics.density).toInt()
             binding.contentPlayerHome.updatePadding(
-                left = insets.left,
-                right = insets.right,
-                top = insets.top,
-                bottom = insets.bottom
+                left = insets.left + gutter,
+                right = insets.right + gutter,
+                top = insets.top + gutter,
+                bottom = insets.bottom + gutter
             )
             windowInsets
         }

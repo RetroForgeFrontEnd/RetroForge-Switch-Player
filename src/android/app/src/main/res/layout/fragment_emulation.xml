@@ -203,6 +203,28 @@
 
         </FrameLayout>
 
+        <!-- RetroForge: swipe in from either edge for the pause menu -->
+        <View
+            android:id="@+id/edge_swipe_left"
+            android:layout_width="20dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="start" />
+
+        <View
+            android:id="@+id/edge_swipe_right"
+            android:layout_width="20dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end" />
+
+        <!-- RetroForge's pause menu (built in code by PauseMenu) -->
+        <FrameLayout
+            android:id="@+id/pause_menu_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clickable="true"
+            android:focusable="false"
+            android:visibility="gone" />
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView
