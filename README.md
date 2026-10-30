@@ -13,7 +13,7 @@
 
 - Built on [Eden](https://git.eden-emu.dev/eden-emu/eden) (GPL-3.0), tuned for phones: shaders build in the background, resolution suits the phone's memory, a RetroForge pause menu, and Switch settings for keys, firmware, the performance overlay and the GPU driver. What changed from Eden and why: [docs/RetroForge.md](docs/RetroForge.md).
 - **You need your own keys and firmware, dumped from your own Switch.** No keys, firmware or games are included or linked here, and none will be.
-- Android 11 or newer, 64-bit ARM. Frame rates on a Galaxy S22: [SWITCH_FPS.md](https://github.com/RetroForgeFrontEnd/RetroForge/blob/main/docs/SWITCH_FPS.md).
+- Android 7 or newer, 64-bit ARM, with Vulkan graphics. Frame rates on a Galaxy S22: [SWITCH_FPS.md](https://github.com/RetroForgeFrontEnd/RetroForge/blob/main/docs/SWITCH_FPS.md).
 
 Licence: GPL-3.0-or-later, as Eden. All credit for the emulator itself goes to the Eden and yuzu teams; Eden's own README follows.
 
