@@ -402,6 +402,9 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (isGamepadEvent(event) && handleMenuKey(event)) {
+            return true
+        }
 
         if (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
             event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
@@ -445,6 +448,10 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
             return super.dispatchGenericMotionEvent(event)
         }
 
+        if (isControllerInput && trackHatForMenu(event)) {
+            return true
+        }
+
         // Don't attempt to do anything if we are disconnecting a device.
         if (event.actionMasked == MotionEvent.ACTION_CANCEL) {
             return true
@@ -455,6 +462,91 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         }
 
         return InputHandler.dispatchGenericMotionEvent(event)
+    }
+
+    // RetroForge's pause-menu hotkey, as in its own player: Down + Select (Switch: D-pad down and -),
+    // or the controller's Home button. In the menu, A picks and B goes back.
+    private var menuDownHeld = false
+    private var menuSelectHeld = false
+
+    private fun isGamepadEvent(event: KeyEvent): Boolean =
+        event.isFromSource(InputDevice.SOURCE_GAMEPAD) || InputHandler.isPhysicalGameController(event.device)
+
+    private fun handleMenuKey(event: KeyEvent): Boolean {
+        val pressed = event.action == KeyEvent.ACTION_DOWN
+        val menuOpen = emulationViewModel.drawerOpen.value
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_BUTTON_MODE -> {
+                if (pressed && event.repeatCount == 0) emulationFragment()?.togglePauseMenuFromController()
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> menuDownHeld = pressed
+            KeyEvent.KEYCODE_BUTTON_SELECT -> menuSelectHeld = pressed
+        }
+        if (pressed && event.repeatCount == 0 && menuDownHeld && menuSelectHeld) {
+            if (!menuOpen) {
+                // The game saw the first of the two go down; let go of both there
+                releaseInGame(event, KeyEvent.KEYCODE_DPAD_DOWN)
+                releaseInGame(event, KeyEvent.KEYCODE_BUTTON_SELECT)
+            }
+            menuDownHeld = false
+            menuSelectHeld = false
+            emulationFragment()?.togglePauseMenuFromController()
+            return true
+        }
+        if (!menuOpen) return false
+
+        if (pressed && event.keyCode != KeyEvent.KEYCODE_BUTTON_B &&
+            emulationFragment()?.focusPauseMenuForController() == true
+        ) {
+            return true
+        }
+        if (event.keyCode == KeyEvent.KEYCODE_BUTTON_B) {
+            if (pressed && event.repeatCount == 0) onBackPressedDispatcher.onBackPressed()
+            return true
+        }
+        if (event.keyCode != KeyEvent.KEYCODE_BUTTON_A) return false
+        val menuKey = KeyEvent.KEYCODE_DPAD_CENTER
+        return super.dispatchKeyEvent(
+            KeyEvent(
+                event.downTime, event.eventTime, event.action, menuKey, event.repeatCount,
+                event.metaState, event.deviceId, event.scanCode, event.flags, event.source
+            )
+        )
+    }
+
+    private fun releaseInGame(event: KeyEvent, keyCode: Int) {
+        if (!InputHandler.isPhysicalGameController(event.device)) return
+        InputHandler.dispatchKeyEvent(
+            KeyEvent(
+                event.downTime, event.eventTime, KeyEvent.ACTION_UP, keyCode, 0,
+                event.metaState, event.deviceId, 0, event.flags, event.source
+            )
+        )
+    }
+
+    /** Controllers whose D-pad is an axis: down on the hat counts toward Down + Select. */
+    private fun trackHatForMenu(event: MotionEvent): Boolean {
+        if (event.device?.getMotionRange(MotionEvent.AXIS_HAT_Y) == null) return false
+        menuDownHeld = event.getAxisValue(MotionEvent.AXIS_HAT_Y) > 0.5f
+        if (!(menuDownHeld && menuSelectHeld)) return false
+        InputHandler.dispatchGenericMotionEvent(event)
+        InputHandler.centerHat(event.device)
+        releaseInGame(
+            KeyEvent(event.downTime, event.eventTime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BUTTON_SELECT,
+                0, event.metaState, event.deviceId, 0, 0, InputDevice.SOURCE_GAMEPAD),
+            KeyEvent.KEYCODE_BUTTON_SELECT
+        )
+        menuDownHeld = false
+        menuSelectHeld = false
+        emulationFragment()?.togglePauseMenuFromController()
+        return true
+    }
+
+    private fun emulationFragment(): EmulationFragment? {
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.fragment_container) as? NavHostFragment
+        return navHostFragment?.childFragmentManager?.fragments?.firstOrNull() as? EmulationFragment
     }
 
     private fun notifyControllerInput() {

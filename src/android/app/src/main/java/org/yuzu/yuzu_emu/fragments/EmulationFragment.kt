@@ -44,8 +44,6 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
-import androidx.drawerlayout.widget.DrawerLayout
-import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -73,7 +71,6 @@ import org.yuzu.yuzu_emu.overlay.PauseMenu
 import org.yuzu.yuzu_emu.activities.EmulationActivity
 import org.yuzu.yuzu_emu.databinding.DialogOverlayAdjustBinding
 import org.yuzu.yuzu_emu.databinding.FragmentEmulationBinding
-import org.yuzu.yuzu_emu.dialogs.QuickSettings
 import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.IntSetting
@@ -154,14 +151,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private var pausedFrameBitmap: Bitmap? = null
 
     var shouldUseCustom = false
-    private var isQuickSettingsMenuOpen = false
-    private val quickSettings = QuickSettings(this)
 
     private val loadAmiiboLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             isAmiiboPickerOpen = false
             val binding = _binding ?: return@registerForActivityResult
-            binding.inGameMenu.requestFocus()
 
             if (!isAdded || uri == null) {
                 return@registerForActivityResult
@@ -646,7 +640,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
         binding.doneControlConfig.visibility = View.VISIBLE
         binding.surfaceInputOverlay.setIsInEditMode(true)
-        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
         binding.surfaceInputOverlay.visibility = View.VISIBLE
         binding.loadingIndicator.visibility = View.GONE
 
@@ -680,8 +673,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         buildId = buildVersion.split("-").getOrNull(0) ?: ""
         driverInUse = driverViewModel.selectedDriverVersion.value
 
-        updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
-        updateQuickStatsMenuEntry()
         onPhysicalControllerStateChanged(InputHandler.androidControllers.isNotEmpty())
 
         binding.surfaceEmulation.holder.addCallback(this)
@@ -695,225 +686,21 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             emulationViewModel.setDrawerOpen(true)
         }
 
-        binding.drawerLayout.addDrawerListener(object : DrawerListener {
-            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-                binding.surfaceInputOverlay.dispatchTouchEvent(
-                    MotionEvent.obtain(
-                        SystemClock.uptimeMillis(),
-                        SystemClock.uptimeMillis() + 100,
-                        MotionEvent.ACTION_UP,
-                        0f,
-                        0f,
-                        0
-                    )
-                )
-            }
-
-            override fun onDrawerOpened(drawerView: View) {
-                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                binding.inGameMenu.requestFocus()
-                emulationViewModel.setDrawerOpen(true)
-                updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
-                if (drawerView == binding.inGameMenu) {
-                    binding.drawerLayout.closeDrawer(binding.quickSettingsSheet)
-                } else if (drawerView == binding.quickSettingsSheet) {
-                    binding.drawerLayout.closeDrawer(binding.inGameMenu)
-                }
-            }
-
-            override fun onDrawerClosed(drawerView: View) {
-                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                emulationViewModel.setDrawerOpen(false)
-            }
-
-            override fun onDrawerStateChanged(newState: Int) {
-                // No op
-            }
-        })
-        binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-
-        if (!BooleanSetting.ENABLE_QUICK_SETTINGS.getBoolean()) {
-            binding.drawerLayout.setDrawerLockMode(
-                DrawerLayout.LOCK_MODE_LOCKED_CLOSED,
-                binding.quickSettingsSheet
-            )
-        }
-
-        updateGameTitle()
-
-        binding.inGameMenu.menu.findItem(R.id.menu_quick_settings)?.isVisible =
-            BooleanSetting.ENABLE_QUICK_SETTINGS.getBoolean()
-
         binding.pausedIcon.setOnClickListener {
             if (this::emulationState.isInitialized && emulationState.isPaused) {
                 resumeEmulationFromUi()
             }
         }
 
-        binding.inGameMenu.menu.findItem(R.id.menu_lock_drawer).apply {
-            val lockMode = IntSetting.LOCK_DRAWER.getInt()
-            val titleId = if (lockMode == DrawerLayout.LOCK_MODE_LOCKED_CLOSED) {
-                R.string.unlock_drawer
-            } else {
-                R.string.lock_drawer
-            }
-            val iconId = if (lockMode == DrawerLayout.LOCK_MODE_UNLOCKED) {
-                R.drawable.ic_unlock
-            } else {
-                R.drawable.ic_lock
-            }
-
-            title = getString(titleId)
-            icon = ResourcesCompat.getDrawable(
-                resources,
-                iconId,
-                requireContext().theme
-            )
-        }
-
-        binding.inGameMenu.setNavigationItemSelectedListener {
-            when (it.itemId) {
-                R.id.menu_pause_emulation -> {
-                    if (emulationState.isPaused) {
-                        resumeEmulationFromUi()
-                    } else {
-                        pauseEmulationAndCaptureFrame()
-                    }
-                    binding.inGameMenu.requestFocus()
-                    true
-                }
-
-                R.id.menu_quick_overlay -> {
-                    val newState = !BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean()
-                    toggleOverlay(newState)
-                    updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
-                    NativeConfig.saveGlobalConfig()
-                    true
-                }
-
-                R.id.menu_quick_stats -> {
-                    // RetroForge: one tap hides or shows both the performance and SoC stats overlays
-                    val show = !isAnyStatsOverlayShown()
-                    BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(show)
-                    BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(show)
-                    updateShowStatsOverlay()
-                    updateSocOverlay()
-                    updateQuickStatsMenuEntry()
-                    NativeConfig.saveGlobalConfig()
-                    true
-                }
-
-            if (BooleanSetting.ENABLE_QUICK_SETTINGS.getBoolean())
-                R.id.menu_quick_settings else 0 -> {
-                openQuickSettingsMenu()
-                true
-            }
-
-                R.id.menu_settings_per_game -> {
-                    val action = HomeNavigationDirections.actionGlobalSettingsActivity(
-                        args.game,
-                        Settings.MenuTag.SECTION_ROOT
-                    )
-                    binding.inGameMenu.requestFocus()
-                    binding.drawerLayout.closeDrawer(binding.quickSettingsSheet)
-                    binding.root.findNavController().navigate(action)
-                    true
-                }
-
-                R.id.menu_load_amiibo -> handleLoadAmiiboSelection()
-
-                R.id.menu_controls -> {
-                    val action = HomeNavigationDirections.actionGlobalSettingsActivity(
-                        null,
-                        Settings.MenuTag.SECTION_INPUT
-                    )
-                    binding.root.findNavController().navigate(action)
-                    true
-                }
-
-                R.id.menu_overlay_controls -> {
-                    showOverlayOptions()
-                    true
-                }
-
-                R.id.menu_lock_drawer -> {
-                    when (IntSetting.LOCK_DRAWER.getInt()) {
-                        DrawerLayout.LOCK_MODE_UNLOCKED -> {
-                            IntSetting.LOCK_DRAWER.setInt(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
-                            it.title = resources.getString(R.string.unlock_drawer)
-                            it.icon = ResourcesCompat.getDrawable(
-                                resources,
-                                R.drawable.ic_lock,
-                                requireContext().theme
-                            )
-                        }
-
-                        DrawerLayout.LOCK_MODE_LOCKED_CLOSED -> {
-                            IntSetting.LOCK_DRAWER.setInt(DrawerLayout.LOCK_MODE_UNLOCKED)
-                            it.title = resources.getString(R.string.lock_drawer)
-                            it.icon = ResourcesCompat.getDrawable(
-                                resources,
-                                R.drawable.ic_unlock,
-                                requireContext().theme
-                            )
-                        }
-                    }
-                    binding.inGameMenu.requestFocus()
-                    NativeConfig.saveGlobalConfig()
-                    true
-                }
-
-                R.id.menu_exit -> {
-                    clearPausedFrame()
-                    emulationState.stop()
-                    NativeConfig.reloadGlobalConfig()
-                    emulationViewModel.setIsEmulationStopping(true)
-                    binding.drawerLayout.close()
-                    binding.inGameMenu.requestFocus()
-                    true
-                }
-
-                else -> true
-            }
-        }
-
-        addQuickSettings()
-
-        binding.drawerLayout.addDrawerListener(object : DrawerListener {
-            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-                // no op
-            }
-
-            override fun onDrawerOpened(drawerView: View) {
-                if (drawerView == binding.quickSettingsSheet) {
-                    isQuickSettingsMenuOpen = true
-                    if (shouldUseCustom) {
-                        SettingsFile.loadCustomConfig(game!!)
-                    }
-                }
-            }
-
-            override fun onDrawerClosed(drawerView: View) {
-                if (drawerView == binding.quickSettingsSheet) {
-                    isQuickSettingsMenuOpen = false
-                    if (shouldUseCustom) {
-                        NativeConfig.unloadPerGameConfig()
-                    }
-                }
-            }
-
-            override fun onDrawerStateChanged(newState: Int) {
-                // No op
-            }
-        })
-
-        setInsets()
-
         requireActivity().onBackPressedDispatcher.addCallback(
             requireActivity(),
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
                     if (!NativeLibrary.isRunning()) {
+                        return
+                    }
+                    if (pauseMenu?.isShowing == true && menuPage != MenuPage.MAIN) {
+                        showMenuPage(MenuPage.MAIN)
                         return
                     }
                     emulationViewModel.setDrawerOpen(pauseMenu?.isShowing != true)
@@ -959,7 +746,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
         emulationViewModel.emulationStarted.collect(viewLifecycleOwner) {
             if (it) {
-                binding.drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 ViewUtils.showView(binding.surfaceInputOverlay)
                 ViewUtils.hideView(binding.loadingIndicator)
 
@@ -969,17 +755,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 updateSocOverlay()
 
                 initializeOverlayAutoHide()
-
-                // Re update binding when the specs values get initialized properly
-                binding.inGameMenu.getHeaderView(0).apply {
-                    val titleView = findViewById<TextView>(R.id.text_game_title)
-                    val cpuBackendLabel = findViewById<TextView>(R.id.cpu_backend)
-                    val vendorLabel = findViewById<TextView>(R.id.gpu_vendor)
-
-                    titleView.text = game?.title ?: ""
-                    cpuBackendLabel.text = NativeLibrary.getCpuBackend()
-                    vendorLabel.text = NativeLibrary.getGpuDriver()
-                }
 
                 val position = IntSetting.PERF_OVERLAY_POSITION.getInt()
                 updateStatsPosition(position)
@@ -1009,9 +784,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         emulationViewModel.programChanged.collect(viewLifecycleOwner) {
             if (it != 0) {
                 emulationViewModel.setEmulationStarted(false)
-                binding.drawerLayout.close()
-                binding.drawerLayout
-                    .setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED)
                 ViewUtils.hideView(binding.surfaceInputOverlay)
                 ViewUtils.showView(binding.loadingIndicator)
             }
@@ -1057,9 +829,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         updateScreenLayout()
         val showInputOverlay = BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean()
         if (emulationActivity?.isInPictureInPictureMode == true) {
-            if (b.drawerLayout.isOpen) {
-                b.drawerLayout.close()
-            }
             if (showInputOverlay) {
                 b.surfaceInputOverlay.setVisible(visible = false, gone = false)
             }
@@ -1081,124 +850,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         }
     }
 
-    private fun updateGameTitle() {
-        game?.let {
-            binding.inGameMenu.getHeaderView(0).apply {
-                val titleView = findViewById<TextView>(R.id.text_game_title)
-                titleView.text = it.title
-            }
-        }
-    }
 
-    private fun addQuickSettings() {
-        binding.quickSettingsSheet.apply {
-            val container = binding.quickSettingsSheet.findViewById<ViewGroup>(R.id.quick_settings_container)
-            val isFsrSelected = isFsrScalingFilterSelected()
-
-            container.removeAllViews()
-
-            if (shouldUseCustom) {
-                quickSettings.addPerGameConfigStatusIndicator(container)
-            }
-
-            lateinit var slowSpeed: MaterialSwitch
-            lateinit var turboSpeed: MaterialSwitch
-
-            turboSpeed = quickSettings.addCustomToggle(
-                R.string.turbo_speed_limit,
-                NativeLibrary.isTurboMode(),
-                BooleanSetting.RENDERER_USE_SPEED_LIMIT.getBoolean(false),
-                container
-            ) { enabled ->
-                if (enabled)
-                    slowSpeed.isChecked = false
-                NativeLibrary.setTurboSpeedLimit(enabled)
-            }!!
-
-            slowSpeed = quickSettings.addCustomToggle(
-                R.string.slow_speed_limit,
-                NativeLibrary.isSlowMode(),
-                BooleanSetting.RENDERER_USE_SPEED_LIMIT.getBoolean(false),
-                container
-            ) { enabled ->
-                if (enabled)
-                    turboSpeed.isChecked = false
-                NativeLibrary.setSlowSpeedLimit(enabled)
-            }!!
-
-            quickSettings.addCustomToggle(
-                R.string.frame_limit_enable,
-                BooleanSetting.RENDERER_USE_SPEED_LIMIT.getBoolean(false),
-                true,
-                container
-            ) { enabled ->
-                if (!enabled) {
-                    turboSpeed.isChecked = false
-                    slowSpeed.isChecked = false
-                }
-
-                turboSpeed.isEnabled = enabled
-                slowSpeed.isEnabled = enabled
-
-                NativeLibrary.setStandardSpeedLimit(enabled)
-            }!!
-
-            quickSettings.addSliderSetting(
-                R.string.frame_limit_slider,
-                container,
-                ShortSetting.RENDERER_SPEED_LIMIT,
-                minValue = 0,
-                maxValue = 400,
-                units = "%",
-            )
-
-            quickSettings.addBooleanSetting(
-                R.string.use_docked_mode,
-                container,
-                BooleanSetting.USE_DOCKED_MODE,
-            )
-
-            quickSettings.addDivider(container)
-
-            quickSettings.addIntSetting(
-                R.string.renderer_accuracy,
-                container,
-                IntSetting.RENDERER_ACCURACY,
-                R.array.rendererAccuracyNames,
-                R.array.rendererAccuracyValues
-            )
-
-
-            quickSettings.addIntSetting(
-                R.string.renderer_scaling_filter,
-                container,
-                IntSetting.RENDERER_SCALING_FILTER,
-                R.array.rendererScalingFilterNames,
-                R.array.rendererScalingFilterValues
-            ) {
-                addQuickSettings()
-            }
-
-            if (isFsrSelected) {
-                quickSettings.addSliderSetting(
-                    R.string.fsr_sharpness,
-                    container,
-                    IntSetting.FSR_SHARPENING_SLIDER,
-                    minValue = 0,
-                    maxValue = 100,
-                    units = "%"
-                )
-            }
-
-            quickSettings.addIntSetting(
-                R.string.renderer_anti_aliasing,
-                container,
-                IntSetting.RENDERER_ANTI_ALIASING,
-                R.array.rendererAntiAliasingNames,
-                R.array.rendererAntiAliasingValues
-            )
-        }
-    }
 
     private fun isFsrScalingFilterSelected(): Boolean {
         val fsrFilterValue = resolveFsrScalingFilterValue() ?: return false
@@ -1214,9 +866,22 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     }
 
     // RetroForge's pause menu: the same menu, pages and look as RetroForge's own players.
-    private enum class MenuPage { MAIN, PICTURE, SOUND_CONTROLS, EMULATOR }
+    private enum class MenuPage { MAIN, PICTURE, SOUND_CONTROLS, TOUCH, EMULATOR }
 
     private var pauseMenu: PauseMenu? = null
+
+    /** The controller's menu hotkey: opens the pause menu, or closes it when it's open. */
+    fun togglePauseMenuFromController() {
+        if (pauseMenu?.isShowing == true) {
+            emulationViewModel.setDrawerOpen(false)
+            return
+        }
+        emulationViewModel.setDrawerOpen(true)
+        _binding?.root?.post { pauseMenu?.focusForController() }
+    }
+
+    /** A controller press in the open menu with nothing focused focuses the first button instead. */
+    fun focusPauseMenuForController(): Boolean = pauseMenu?.focusForController() == true
     private var menuPage = MenuPage.MAIN
     private var pausedByMenu = false
 
@@ -1247,6 +912,16 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         }
         pausedByMenu = false
         emulationViewModel.setDrawerOpen(false)
+    }
+
+    private var returnToPauseMenu = false
+
+    /** Opens a settings screen from the pause menu; the game stays paused and the menu is back on return. */
+    private fun openFromPauseMenu(direction: androidx.navigation.NavDirections) {
+        pausedByMenu = false
+        returnToPauseMenu = true
+        pauseMenu?.close()
+        binding.root.findNavController().navigate(direction)
     }
 
     private fun showMenuPage(page: MenuPage) {
@@ -1368,6 +1043,58 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             PauseMenu.Page(getString(R.string.player_menu_picture_title), items = items)
         }
 
+        MenuPage.TOUCH -> PauseMenu.Page(
+            title = getString(R.string.player_menu_touch_options_title),
+            items = listOf(
+                PauseMenu.Item(getString(R.string.player_menu_edit_touch)) {
+                    pauseMenu?.close()
+                    binding.surfaceInputOverlay.requestFocus()
+                    startConfiguringControls()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_choose_buttons)) {
+                    pauseMenu?.close()
+                    chooseTouchControls()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_size_opacity)) {
+                    pauseMenu?.close()
+                    adjustOverlay()
+                },
+                PauseMenu.Item(
+                    getString(
+                        R.string.player_menu_haptics,
+                        onOff(BooleanSetting.HAPTIC_FEEDBACK.getBoolean())
+                    )
+                ) {
+                    BooleanSetting.HAPTIC_FEEDBACK.setBoolean(!BooleanSetting.HAPTIC_FEEDBACK.getBoolean())
+                    NativeConfig.saveGlobalConfig()
+                    pauseMenu?.refresh()
+                },
+                PauseMenu.Item(
+                    getString(
+                        R.string.player_menu_stick_center,
+                        onOff(BooleanSetting.JOYSTICK_REL_CENTER.getBoolean())
+                    )
+                ) {
+                    BooleanSetting.JOYSTICK_REL_CENTER.setBoolean(
+                        !BooleanSetting.JOYSTICK_REL_CENTER.getBoolean()
+                    )
+                    NativeConfig.saveGlobalConfig()
+                    pauseMenu?.refresh()
+                },
+                PauseMenu.Item(
+                    getString(R.string.player_menu_dpad_slide, onOff(BooleanSetting.DPAD_SLIDE.getBoolean()))
+                ) {
+                    BooleanSetting.DPAD_SLIDE.setBoolean(!BooleanSetting.DPAD_SLIDE.getBoolean())
+                    NativeConfig.saveGlobalConfig()
+                    pauseMenu?.refresh()
+                },
+                PauseMenu.Item(getString(R.string.player_menu_reset_touch)) {
+                    pauseMenu?.close()
+                    resetInputOverlay()
+                }
+            )
+        )
+
         MenuPage.SOUND_CONTROLS -> PauseMenu.Page(
             title = getString(R.string.player_menu_sound_controls_title),
             items = listOf(
@@ -1389,14 +1116,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     NativeConfig.saveGlobalConfig()
                     pauseMenu?.refresh()
                 },
-                PauseMenu.Item(getString(R.string.player_menu_edit_touch)) {
-                    pauseMenu?.close()
-                    binding.surfaceInputOverlay.requestFocus()
-                    startConfiguringControls()
+                PauseMenu.Item(getString(R.string.player_menu_touch_options)) {
+                    showMenuPage(MenuPage.TOUCH)
                 },
                 PauseMenu.Item(getString(R.string.player_menu_remap)) {
-                    pauseMenu?.close()
-                    binding.root.findNavController().navigate(
+                    openFromPauseMenu(
                         HomeNavigationDirections.actionGlobalSettingsActivity(
                             null,
                             Settings.MenuTag.SECTION_INPUT
@@ -1410,8 +1134,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             title = getString(R.string.player_menu_emulator_title),
             items = listOf(
                 PauseMenu.Item(getString(R.string.player_game_settings)) {
-                    pauseMenu?.close()
-                    binding.root.findNavController().navigate(
+                    openFromPauseMenu(
                         HomeNavigationDirections.actionGlobalSettingsActivity(
                             args.game,
                             Settings.MenuTag.SECTION_ROOT
@@ -1441,67 +1164,16 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         emulationViewModel.setIsEmulationStopping(true)
     }
 
-    private fun openQuickSettingsMenu() {
-        binding.drawerLayout.closeDrawer(binding.inGameMenu)
-        binding.drawerLayout.openDrawer(binding.quickSettingsSheet)
-    }
 
     private fun isAnyStatsOverlayShown(): Boolean =
         BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean() ||
             BooleanSetting.SHOW_SOC_OVERLAY.getBoolean()
 
-    private fun updateQuickStatsMenuEntry() {
-        val b = _binding ?: return
-        val item = b.inGameMenu.menu.findItem(R.id.menu_quick_stats) ?: return
-        item.title = getString(
-            if (isAnyStatsOverlayShown()) R.string.emulation_hide_stats else R.string.emulation_show_stats
-        )
-    }
 
-    private fun updateQuickOverlayMenuEntry(isVisible: Boolean) {
-        val b = _binding ?: return
-        val item = b.inGameMenu.menu.findItem(R.id.menu_quick_overlay) ?: return
 
-        if (isVisible) {
-            item.title = getString(R.string.emulation_hide_overlay)
-            item.icon = ResourcesCompat.getDrawable(
-                resources,
-                R.drawable.ic_controller_disconnected,
-                requireContext().theme
-            )
-        } else {
-            item.title = getString(R.string.emulation_show_overlay)
-            item.icon = ResourcesCompat.getDrawable(
-                resources,
-                R.drawable.ic_controller,
-                requireContext().theme
-            )
-        }
-    }
-
-    private fun updatePauseMenuEntry(isPaused: Boolean) {
-        val b = _binding ?: return
-        val pauseItem = b.inGameMenu.menu.findItem(R.id.menu_pause_emulation) ?: return
-        if (isPaused) {
-            pauseItem.title = getString(R.string.emulation_unpause)
-            pauseItem.icon = ResourcesCompat.getDrawable(
-                resources,
-                R.drawable.ic_play,
-                requireContext().theme
-            )
-        } else {
-            pauseItem.title = getString(R.string.emulation_pause)
-            pauseItem.icon = ResourcesCompat.getDrawable(
-                resources,
-                R.drawable.ic_pause,
-                requireContext().theme
-            )
-        }
-    }
 
     private fun pauseEmulationAndCaptureFrame() {
         emulationState.pause()
-        updatePauseMenuEntry(true)
         capturePausedFrameFromCore()
         updatePausedFrameVisibility()
     }
@@ -1552,7 +1224,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private fun resumeEmulationFromUi() {
         clearPausedFrame()
         emulationState.resume()
-        updatePauseMenuEntry(emulationState.isPaused)
         updatePausedFrameVisibility()
     }
 
@@ -1567,7 +1238,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private fun handleLoadAmiiboSelection(): Boolean {
         val binding = _binding ?: return true
 
-        binding.inGameMenu.requestFocus()
 
         if (!NativeLibrary.isRunning()) {
             showAmiiboDialog(R.string.amiibo_wrong_state)
@@ -1587,7 +1257,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 }
 
                 isAmiiboPickerOpen = true
-                binding.drawerLayout.close()
                 loadAmiiboLauncher.launch(AMIIBO_MIME_TYPES)
             }
 
@@ -1692,10 +1361,15 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         updateSocPosition(IntSetting.SOC_OVERLAY_POSITION.getInt())
 
         if (this::emulationState.isInitialized) {
-            b.inGameMenu.post {
+            b.root.post {
                 if (!this::emulationState.isInitialized || _binding == null) return@post
-                updatePauseMenuEntry(emulationState.isPaused)
                 updatePausedFrameVisibility()
+                if (returnToPauseMenu) {
+                    returnToPauseMenu = false
+                    // Closing the menu now resumes the game the menu paused
+                    pausedByMenu = emulationState.isPaused
+                    emulationViewModel.setDrawerOpen(true)
+                }
             }
         }
 
@@ -1703,7 +1377,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         // we need to reinitialize the auto-hide timer
         initializeOverlayAutoHide()
 
-        addQuickSettings()
     }
 
     private fun resetInputOverlay() {
@@ -2080,9 +1753,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     if (it.orientation == FoldingFeature.Orientation.HORIZONTAL) {
                         // Restrict emulation and overlays to the top of the screen
                         binding.emulationContainer.layoutParams.height = it.bounds.top
-                        // Restrict input and menu drawer to the bottom of the screen
+                        // Restrict input to the bottom of the screen
                         binding.inputContainer.layoutParams.height = it.bounds.bottom
-                        binding.inGameMenu.layoutParams.height = it.bounds.bottom
 
                         isInFoldableLayout = true
                         binding.surfaceInputOverlay.layout = OverlayLayout.Foldable
@@ -2093,14 +1765,12 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         if (!isFolding) {
             binding.emulationContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
             binding.inputContainer.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-            binding.inGameMenu.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
             isInFoldableLayout = false
             updateOrientation()
             onConfigurationChanged(resources.configuration)
         }
         binding.emulationContainer.requestLayout()
         binding.inputContainer.requestLayout()
-        binding.inGameMenu.requestLayout()
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -2207,148 +1877,45 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         NativeConfig.reloadGlobalConfig()
     }
 
-    private fun showOverlayOptions() {
-        val anchor = binding.inGameMenu.findViewById<View>(R.id.menu_overlay_controls)
-        val popup = PopupMenu(requireContext(), anchor)
 
-        popup.menuInflater.inflate(R.menu.menu_overlay_options, popup.menu)
-
-        popup.menu.apply {
-            findItem(R.id.menu_show_stats_overlay).isChecked =
-                BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean()
-            findItem(R.id.menu_show_soc_overlay).isChecked =
-                BooleanSetting.SHOW_SOC_OVERLAY.getBoolean()
-            findItem(R.id.menu_rel_stick_center).isChecked =
-                BooleanSetting.JOYSTICK_REL_CENTER.getBoolean()
-            findItem(R.id.menu_dpad_slide).isChecked = BooleanSetting.DPAD_SLIDE.getBoolean()
-            findItem(R.id.menu_show_overlay).isChecked =
-                BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean()
-            findItem(R.id.menu_snap_to_grid).isChecked =
-                BooleanSetting.OVERLAY_SNAP_TO_GRID.getBoolean()
-            findItem(R.id.menu_haptics).isChecked = BooleanSetting.HAPTIC_FEEDBACK.getBoolean()
-            findItem(R.id.menu_touchscreen).isChecked = BooleanSetting.TOUCHSCREEN.getBoolean()
+    private fun chooseTouchControls() {
+        val overlayControlData = NativeConfig.getOverlayControlData()
+        val optionsArray = BooleanArray(overlayControlData.size)
+        overlayControlData.forEachIndexed { i, _ ->
+            optionsArray[i] = overlayControlData.firstOrNull { data ->
+                OverlayControl.entries[i].id == data.id
+            }?.enabled == true
         }
 
-        popup.setOnDismissListener { NativeConfig.saveGlobalConfig() }
-        popup.setOnMenuItemClickListener {
-            when (it.itemId) {
-                R.id.menu_show_stats_overlay -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(it.isChecked)
-                    updateShowStatsOverlay()
-                    updateQuickStatsMenuEntry()
-                    true
-                }
-
-                R.id.menu_show_soc_overlay -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(it.isChecked)
-                    updateSocOverlay()
-                    updateQuickStatsMenuEntry()
-                    true
-                }
-
-                R.id.menu_edit_overlay -> {
-                    binding.drawerLayout.close()
-                    binding.surfaceInputOverlay.requestFocus()
-                    startConfiguringControls()
-                    true
-                }
-
-                R.id.menu_snap_to_grid -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.OVERLAY_SNAP_TO_GRID.setBoolean(it.isChecked)
-                    binding.surfaceInputOverlay.invalidate()
-                    true
-                }
-
-                R.id.menu_adjust_overlay -> {
-                    adjustOverlay()
-                    true
-                }
-
-                R.id.menu_toggle_controls -> {
-                    val overlayControlData = NativeConfig.getOverlayControlData()
-                    val optionsArray = BooleanArray(overlayControlData.size)
-                    overlayControlData.forEachIndexed { i, _ ->
-                        optionsArray[i] = overlayControlData.firstOrNull { data ->
-                            OverlayControl.entries[i].id == data.id
-                        }?.enabled == true
-                    }
-
-                    val dialog = MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.emulation_toggle_controls)
-                        .setMultiChoiceItems(
-                            R.array.gamepadButtons,
-                            optionsArray
-                        ) { _, indexSelected, isChecked ->
-                            overlayControlData.firstOrNull { data ->
-                                OverlayControl.entries[indexSelected].id == data.id
-                            }?.enabled = isChecked
-                        }
-                        .setPositiveButton(android.R.string.ok) { _, _ ->
-                            NativeConfig.setOverlayControlData(overlayControlData)
-                            NativeConfig.saveGlobalConfig()
-                            binding.surfaceInputOverlay.refreshControls()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .setNeutralButton(R.string.emulation_toggle_all) { _, _ -> }
-                        .show()
-
-                    // Override normal behaviour so the dialog doesn't close
-                    dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
-                        .setOnClickListener {
-                            val isChecked = !optionsArray[0]
-                            overlayControlData.forEachIndexed { i, _ ->
-                                optionsArray[i] = isChecked
-                                dialog.listView.setItemChecked(i, isChecked)
-                                overlayControlData[i].enabled = isChecked
-                            }
-                        }
-                    true
-                }
-
-                R.id.menu_show_overlay -> {
-                    it.isChecked = !it.isChecked
-                    toggleOverlay(it.isChecked)
-                    true
-                }
-
-                R.id.menu_rel_stick_center -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.JOYSTICK_REL_CENTER.setBoolean(it.isChecked)
-                    true
-                }
-
-                R.id.menu_dpad_slide -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.DPAD_SLIDE.setBoolean(it.isChecked)
-                    true
-                }
-
-                R.id.menu_haptics -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.HAPTIC_FEEDBACK.setBoolean(it.isChecked)
-                    true
-                }
-
-                R.id.menu_touchscreen -> {
-                    it.isChecked = !it.isChecked
-                    BooleanSetting.TOUCHSCREEN.setBoolean(it.isChecked)
-                    true
-                }
-
-                R.id.menu_reset_overlay -> {
-                    binding.drawerLayout.close()
-                    resetInputOverlay()
-                    true
-                }
-
-                else -> true
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.emulation_toggle_controls)
+            .setMultiChoiceItems(
+                R.array.gamepadButtons,
+                optionsArray
+            ) { _, indexSelected, isChecked ->
+                overlayControlData.firstOrNull { data ->
+                    OverlayControl.entries[indexSelected].id == data.id
+                }?.enabled = isChecked
             }
-        }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                NativeConfig.setOverlayControlData(overlayControlData)
+                NativeConfig.saveGlobalConfig()
+                binding.surfaceInputOverlay.refreshControls()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .setNeutralButton(R.string.emulation_toggle_all) { _, _ -> }
+            .show()
 
-        popup.show()
+        // Override normal behaviour so the dialog doesn't close
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            .setOnClickListener {
+                val isChecked = !optionsArray[0]
+                overlayControlData.forEachIndexed { i, _ ->
+                    optionsArray[i] = isChecked
+                    dialog.listView.setItemChecked(i, isChecked)
+                    overlayControlData[i].enabled = isChecked
+                }
+            }
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -2428,44 +1995,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         binding.surfaceInputOverlay.refreshControls()
     }
 
-    private fun setInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(
-            binding.inGameMenu
-        ) { v: View, windowInsets: WindowInsetsCompat ->
-            val cutInsets: Insets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
-            var left = 0
-            var right = 0
-            if (v.layoutDirection == View.LAYOUT_DIRECTION_LTR) {
-                left = cutInsets.left
-            } else {
-                right = cutInsets.right
-            }
-
-            v.setPadding(left, cutInsets.top, right, 0)
-
-            windowInsets
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(binding.quickSettingsSheet) { v, insets ->
-            val systemBarsInsets: Insets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-           if (v.layoutDirection == View.LAYOUT_DIRECTION_LTR) {
-                v.setPadding(
-                    systemBarsInsets.left,
-                    systemBarsInsets.top,
-                    0,
-                    systemBarsInsets.bottom
-                )
-            } else {
-                v.setPadding(
-                    0,
-                    systemBarsInsets.top,
-                    systemBarsInsets.right,
-                    systemBarsInsets.bottom
-                )
-            }
-            insets
-        }
-    }
 
     private class EmulationState(
         private val gamePath: String,
@@ -2763,7 +2292,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 wasInputOverlayAutoHidden = false
             }
             BooleanSetting.SHOW_INPUT_OVERLAY.setBoolean(enable)
-            updateQuickOverlayMenuEntry(enable)
             binding.surfaceInputOverlay.refreshControls()
         }
     }

@@ -43,6 +43,14 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
 
     val isShowing get() = container.visibility == View.VISIBLE
 
+    private var firstButton: View? = null
+
+    /** Puts the controller's focus on the page's first button unless something in the menu has it. */
+    fun focusForController(): Boolean {
+        if (!isShowing || container.findFocus() != null) return false
+        return firstButton?.requestFocusFromTouch() == true
+    }
+
     /** Shows the page [page] builds; [back] runs for the Back button on sub-pages. */
     fun show(back: () -> Unit, page: () -> Page) {
         onBack = back
@@ -130,7 +138,8 @@ class PauseMenu(private val container: FrameLayout, private val onClosed: () -> 
                 }
             }
         }
-        first?.requestFocus()
+        firstButton = first
+        if (!container.isInTouchMode) first?.requestFocus()
     }
 
     private fun menuButton(label: String, action: () -> Unit): MaterialButton =

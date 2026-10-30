@@ -107,6 +107,12 @@ object InputHandler {
         return true
     }
 
+    /** Tells the game the D-pad hat is back in the middle, when a menu takes over the controller. */
+    fun centerHat(device: InputDevice) {
+        val controllerData = androidControllers[device.controllerNumber] ?: return
+        NativeInput.onGamePadAxisEvent(controllerData.getGUID(), controllerData.getPort(), MotionEvent.AXIS_HAT_Y, 0f)
+    }
+
     fun getDevices(): Map<Int, YuzuPhysicalDevice> {
         val gameControllerDeviceIds = mutableMapOf<Int, YuzuPhysicalDevice>()
         val deviceIds = InputDevice.getDeviceIds()

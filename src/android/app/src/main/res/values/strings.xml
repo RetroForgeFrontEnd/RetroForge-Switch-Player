@@ -439,6 +439,14 @@
     <string name="player_menu_touch_controls">Touch controls: %1$s</string>
     <string name="player_menu_edit_touch">Move and resize touch controls</string>
     <string name="player_menu_remap">Remap buttons ›</string>
+    <string name="player_menu_touch_options">Touch control options ›</string>
+    <string name="player_menu_touch_options_title">Touch controls</string>
+    <string name="player_menu_choose_buttons">Choose which buttons show</string>
+    <string name="player_menu_size_opacity">Size and see-through</string>
+    <string name="player_menu_haptics">Vibrate on touch: %1$s</string>
+    <string name="player_menu_stick_center">Sticks centre where you touch: %1$s</string>
+    <string name="player_menu_dpad_slide">Slide across the D-pad: %1$s</string>
+    <string name="player_menu_reset_touch">Reset touch controls</string>
     <string name="player_menu_accuracy">Accuracy: %1$s</string>
     <string name="player_menu_on">On</string>
     <string name="player_menu_off">Off</string>
