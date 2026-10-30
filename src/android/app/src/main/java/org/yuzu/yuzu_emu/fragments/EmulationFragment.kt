@@ -679,6 +679,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         driverInUse = driverViewModel.selectedDriverVersion.value
 
         updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
+        updateQuickStatsMenuEntry()
         onPhysicalControllerStateChanged(InputHandler.androidControllers.isNotEmpty())
 
         binding.surfaceEmulation.holder.addCallback(this)
@@ -776,6 +777,18 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     val newState = !BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean()
                     toggleOverlay(newState)
                     updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
+                    NativeConfig.saveGlobalConfig()
+                    true
+                }
+
+                R.id.menu_quick_stats -> {
+                    // RetroForge: one tap hides or shows both the performance and SoC stats overlays
+                    val show = !isAnyStatsOverlayShown()
+                    BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(show)
+                    BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(show)
+                    updateShowStatsOverlay()
+                    updateSocOverlay()
+                    updateQuickStatsMenuEntry()
                     NativeConfig.saveGlobalConfig()
                     true
                 }
@@ -1213,6 +1226,18 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private fun openQuickSettingsMenu() {
         binding.drawerLayout.closeDrawer(binding.inGameMenu)
         binding.drawerLayout.openDrawer(binding.quickSettingsSheet)
+    }
+
+    private fun isAnyStatsOverlayShown(): Boolean =
+        BooleanSetting.SHOW_PERFORMANCE_OVERLAY.getBoolean() ||
+            BooleanSetting.SHOW_SOC_OVERLAY.getBoolean()
+
+    private fun updateQuickStatsMenuEntry() {
+        val b = _binding ?: return
+        val item = b.inGameMenu.menu.findItem(R.id.menu_quick_stats) ?: return
+        item.title = getString(
+            if (isAnyStatsOverlayShown()) R.string.emulation_hide_stats else R.string.emulation_show_stats
+        )
     }
 
     private fun updateQuickOverlayMenuEntry(isVisible: Boolean) {
@@ -1993,6 +2018,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     it.isChecked = !it.isChecked
                     BooleanSetting.SHOW_PERFORMANCE_OVERLAY.setBoolean(it.isChecked)
                     updateShowStatsOverlay()
+                    updateQuickStatsMenuEntry()
                     true
                 }
 
@@ -2000,6 +2026,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     it.isChecked = !it.isChecked
                     BooleanSetting.SHOW_SOC_OVERLAY.setBoolean(it.isChecked)
                     updateSocOverlay()
+                    updateQuickStatsMenuEntry()
                     true
                 }
 
