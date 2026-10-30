@@ -1,37 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- RetroForge: the player has no game list. Opening it with no game shows playerHomeFragment
+     (open RetroForge, keys, firmware, GPU driver, About); games come in from RetroForge. -->
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/home_navigation"
-    app:startDestination="@id/gamesFragment">
+    app:startDestination="@id/playerHomeFragment">
 
     <fragment
-        android:id="@+id/gamesFragment"
-        android:name="org.yuzu.yuzu_emu.ui.GamesFragment"
-        android:label="PlatformGamesFragment" />
-        <action
-            android:id="@+id/action_gamesFragment_to_homeSettingsFragment"
-            app:destination="@id/homeSettingsFragment"
-            app:enterAnim="@anim/nav_default_enter_anim"
-            app:exitAnim="@anim/nav_default_exit_anim"
-            app:popEnterAnim="@anim/nav_default_pop_enter_anim"
-            app:popExitAnim="@anim/nav_default_pop_exit_anim" />
-
-    <fragment
-        android:id="@+id/homeSettingsFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.HomeSettingsFragment"
-        android:label="HomeSettingsFragment" />
-
-    <fragment
-        android:id="@+id/firstTimeSetupFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.SetupFragment"
-        android:label="FirstTimeSetupFragment" >
-        <action
-            android:id="@+id/action_firstTimeSetupFragment_to_gamesFragment"
-            app:destination="@id/gamesFragment"
-            app:popUpTo="@id/firstTimeSetupFragment"
-            app:popUpToInclusive="true" />
-    </fragment>
+        android:id="@+id/playerHomeFragment"
+        android:name="org.yuzu.yuzu_emu.fragments.PlayerHomeFragment"
+        android:label="PlayerHomeFragment"
+        tools:layout="@layout/fragment_player_home" />
 
     <fragment
         android:id="@+id/aboutFragment"
@@ -43,25 +23,22 @@
         android:name="org.yuzu.yuzu_emu.fragments.LicensesFragment"
         android:label="LicensesFragment" />
 
-    <activity
-        android:id="@+id/emulationActivity"
-        android:name="org.yuzu.yuzu_emu.activities.EmulationActivity"
-        android:label="EmulationActivity">
+    <fragment
+        android:id="@+id/driverManagerFragment"
+        android:name="org.yuzu.yuzu_emu.fragments.DriverManagerFragment"
+        android:label="DriverManagerFragment" >
         <argument
             android:name="game"
             app:argType="org.yuzu.yuzu_emu.model.Game"
             app:nullable="true"
             android:defaultValue="@null" />
-        <argument
-            android:name="custom"
-            app:argType="boolean"
-            android:defaultValue="false" />
-    </activity>
+    </fragment>
 
-    <action
-        android:id="@+id/action_global_emulationActivity"
-        app:destination="@id/emulationActivity"
-        app:launchSingleTop="true" />
+    <fragment
+        android:id="@+id/driverFetcherFragment"
+        android:name="org.yuzu.yuzu_emu.fragments.DriverFetcherFragment"
+        android:label="fragment_driver_fetcher"
+        tools:layout="@layout/fragment_driver_fetcher" />
 
     <activity
         android:id="@+id/settingsActivity"
@@ -79,117 +56,5 @@
     <action
         android:id="@+id/action_global_settingsActivity"
         app:destination="@id/settingsActivity" />
-    <activity
-        android:id="@+id/settingsSubscreenActivity"
-        android:name="org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreenActivity"
-        android:label="SettingsSubscreenActivity">
-        <argument
-            android:name="destination"
-            app:argType="org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreen" />
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game"
-            app:nullable="true"
-            android:defaultValue="@null" />
-    </activity>
-    <action
-        android:id="@+id/action_global_settingsSubscreenActivity"
-        app:destination="@id/settingsSubscreenActivity" />
-    <fragment
-        android:id="@+id/installableFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.InstallableFragment"
-        android:label="InstallableFragment" />
-    <fragment
-        android:id="@+id/driverManagerFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.DriverManagerFragment"
-        android:label="DriverManagerFragment" >
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game"
-            app:nullable="true"
-            android:defaultValue="@null" />
-    </fragment>
-    <fragment
-        android:id="@+id/appletLauncherFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.AppletLauncherFragment"
-        android:label="AppletLauncherFragment" >
-        <action
-            android:id="@+id/action_appletLauncherFragment_to_cabinetLauncherDialogFragment"
-            app:destination="@id/cabinetLauncherDialogFragment" />
-    </fragment>
-    <dialog
-        android:id="@+id/cabinetLauncherDialogFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.CabinetLauncherDialogFragment"
-        android:label="CabinetLauncherDialogFragment" />
-    <fragment
-        android:id="@+id/gameFoldersFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.GameFoldersFragment"
-        android:label="GameFoldersFragment" />
-    <fragment
-        android:id="@+id/perGamePropertiesFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.GamePropertiesFragment"
-        android:label="PerGamePropertiesFragment" >
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game" />
-        <action
-            android:id="@+id/action_perGamePropertiesFragment_to_gameInfoFragment"
-            app:destination="@id/gameInfoFragment" />
-        <action
-            android:id="@+id/action_perGamePropertiesFragment_to_addonsFragment"
-            app:destination="@id/addonsFragment" />
-        <action
-            android:id="@+id/action_perGamePropertiesFragment_to_driverManagerFragment"
-            app:destination="@id/driverManagerFragment" />
-        <action
-            android:id="@+id/action_perGamePropertiesFragment_to_freedrenoSettingsFragment"
-            app:destination="@id/freedrenoSettingsFragment" />
-    </fragment>
-    <action
-        android:id="@+id/action_global_perGamePropertiesFragment"
-        app:destination="@id/perGamePropertiesFragment" />
-    <fragment
-        android:id="@+id/gameInfoFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.GameInfoFragment"
-        android:label="GameInfoFragment" >
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game" />
-    </fragment>
-    <fragment
-        android:id="@+id/addonsFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.AddonsFragment"
-        android:label="AddonsFragment" >
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game" />
-    </fragment>
-    <fragment
-        android:id="@+id/driverFetcherFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.DriverFetcherFragment"
-        android:label="fragment_driver_fetcher"
-        tools:layout="@layout/fragment_driver_fetcher" />
-    <fragment
-        android:id="@+id/freedrenoSettingsFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.FreedrenoSettingsFragment"
-        android:label="@string/freedreno_settings_title">
-        <argument
-            android:name="game"
-            app:argType="org.yuzu.yuzu_emu.model.Game"
-            app:nullable="true"
-            android:defaultValue="@null" />
-    </fragment>
-    <fragment
-        android:id="@+id/profileManagerFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.ProfileManagerFragment"
-        android:label="ProfileManagerFragment" >
-        <action
-            android:id="@+id/action_profileManagerFragment_to_newUserDialog"
-            app:destination="@id/newUserDialogFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/newUserDialogFragment"
-        android:name="org.yuzu.yuzu_emu.fragments.EditUserDialogFragment"
-        android:label="NewUserDialogFragment" />
 
 </navigation>

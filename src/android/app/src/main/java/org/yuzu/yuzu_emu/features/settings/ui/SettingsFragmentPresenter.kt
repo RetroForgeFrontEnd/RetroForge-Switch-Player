@@ -140,16 +140,34 @@ class SettingsFragmentPresenter(
         }
     }
 
+    // RetroForge: the in-game "Game settings" list. A short, flat list of what players change per
+    // game; the full graphics list stays one tap away for the rest.
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
-            add(
-                SubmenuSetting(
-                    titleId = R.string.preferences_system,
-                    descriptionId = R.string.preferences_system_description,
-                    iconId = R.drawable.ic_system_settings,
-                    menuKey = MenuTag.SECTION_SYSTEM
-                )
-            )
+            add(HeaderSetting(R.string.player_settings_console))
+            add(BooleanSetting.USE_DOCKED_MODE.key)
+            add(BooleanSetting.RENDERER_USE_SPEED_LIMIT.key)
+            add(ShortSetting.RENDERER_SPEED_LIMIT.key)
+
+            add(HeaderSetting(R.string.player_settings_picture))
+            add(IntSetting.RENDERER_RESOLUTION.key)
+            add(IntSetting.RENDERER_SCALING_FILTER.key)
+            if (isFsrScalingFilterSelected()) {
+                add(IntSetting.FSR_SHARPENING_SLIDER.key)
+            }
+            add(IntSetting.RENDERER_ANTI_ALIASING.key)
+            add(IntSetting.RENDERER_ASPECT_RATIO.key)
+            add(IntSetting.RENDERER_VSYNC.key)
+
+            add(HeaderSetting(R.string.player_settings_speed))
+            add(IntSetting.RENDERER_ACCURACY.key)
+            add(BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.key)
+            add(BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.key)
+
+            add(HeaderSetting(R.string.preferences_audio))
+            add(ByteSetting.AUDIO_VOLUME.key)
+
+            add(HeaderSetting(R.string.player_settings_more))
             add(
                 SubmenuSetting(
                     titleId = R.string.preferences_graphics,
@@ -158,67 +176,14 @@ class SettingsFragmentPresenter(
                     menuKey = MenuTag.SECTION_RENDERER
                 )
             )
-            if (!NativeConfig.isPerGameConfigLoaded()) {
-                add(
-                    SubmenuSetting(
-                        titleId = R.string.stats_overlay_options,
-                        descriptionId = R.string.stats_overlay_options_description,
-                        iconId = R.drawable.ic_frames,
-                        menuKey = MenuTag.SECTION_PERFORMANCE_STATS
-                    )
-                )
-
-                add(
-                    SubmenuSetting(
-                        titleId = R.string.soc_overlay_options,
-                        descriptionId = R.string.soc_overlay_options_description,
-                        iconId = R.drawable.ic_system,
-                        menuKey = MenuTag.SECTION_SOC_OVERLAY
-                    )
-                )
-                add(
-                    SubmenuSetting(
-                        titleId = R.string.input_overlay_options,
-                        iconId = R.drawable.ic_controller,
-                        descriptionId = R.string.input_overlay_options_description,
-                        menuKey = MenuTag.SECTION_INPUT_OVERLAY
-                    )
-                )
-            }
             add(
                 SubmenuSetting(
-                    titleId = R.string.preferences_audio,
-                    descriptionId = R.string.preferences_audio_description,
-                    iconId = R.drawable.ic_audio,
-                    menuKey = MenuTag.SECTION_AUDIO
+                    titleId = R.string.preferences_system,
+                    descriptionId = R.string.preferences_system_description,
+                    iconId = R.drawable.ic_system_settings,
+                    menuKey = MenuTag.SECTION_SYSTEM
                 )
             )
-            add(
-                SubmenuSetting(
-                    titleId = R.string.preferences_debug,
-                    descriptionId = R.string.preferences_debug_description,
-                    iconId = R.drawable.ic_code,
-                    menuKey = MenuTag.SECTION_DEBUG
-                )
-            )
-            add(
-                SubmenuSetting(
-                    titleId = R.string.applets_menu,
-                    descriptionId = R.string.applets_menu_description,
-                    iconId = R.drawable.ic_applet,
-                    menuKey = MenuTag.SECTION_APPLETS
-                )
-            )
-            if (!NativeConfig.isPerGameConfigLoaded()) {
-                add(
-                    SubmenuSetting(
-                        titleId = R.string.preferences_custom_paths,
-                        descriptionId = R.string.preferences_custom_paths_description,
-                        iconId = R.drawable.ic_folder_open,
-                        menuKey = MenuTag.SECTION_CUSTOM_PATHS
-                    )
-                )
-            }
             add(
                 RunnableSetting(
                     titleId = R.string.reset_to_default,
@@ -251,11 +216,6 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.USE_CUSTOM_CPU_TICKS.key)
             add(IntSetting.CPU_TICKS.key)
 
-            if (!NativeConfig.isPerGameConfigLoaded()) {
-                add(HeaderSetting(R.string.network))
-                add(StringSetting.WEB_TOKEN.key)
-                add(StringSetting.WEB_USERNAME.key)
-            }
         }
     }
 

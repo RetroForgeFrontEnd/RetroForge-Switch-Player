@@ -14,7 +14,6 @@ import android.widget.Toast
 import androidx.preference.PreferenceManager
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
-import org.yuzu.yuzu_emu.dialogs.ChatMessage
 import java.net.Inet4Address
 import androidx.core.content.edit
 
@@ -336,3 +335,11 @@ object NetPlayManager {
         const val CHAT_MESSAGE = 27
     }
 }
+
+class ChatMessage(
+    val nickname: String, // This is the common name youll see on private servers
+    val username: String, // Username is the community/forum username
+    val message: String,
+    val timestamp: String = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+        .format(java.util.Date())
+)

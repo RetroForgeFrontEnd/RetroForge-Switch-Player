@@ -401,6 +401,25 @@
     <!-- About screen strings -->
     <string name="gaia_is_not_real">Gaia isn\'t real</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
+    <!-- RetroForge: the player's own screens (no game list; RetroForge is the front end) -->
+    <string name="player_home_title">Games open from RetroForge</string>
+    <string name="player_home_description">Pick a Switch game in RetroForge and it plays here. This app has no game list of its own.</string>
+    <string name="player_open_retroforge">Open RetroForge</string>
+    <string name="player_retroforge_missing">RetroForge is not installed on this device</string>
+    <string name="player_keys">Keys</string>
+    <string name="player_keys_installed">prod.keys installed</string>
+    <string name="player_keys_missing">Not installed. Needed for retail games; homebrew runs without them. Use keys dumped from your own console.</string>
+    <string name="player_firmware_missing">Not installed. Some games need it. Use firmware dumped from your own console (a .zip of .nca files).</string>
+    <string name="player_firmware_installed">Version %1$s installed</string>
+    <string name="player_gpu_driver_description">Choose the graphics driver the player uses</string>
+    <string name="player_about_description">Version, credits and licences</string>
+    <string name="player_game_settings">Game settings</string>
+    <string name="player_settings_console">Console</string>
+    <string name="player_settings_picture">Picture</string>
+    <string name="player_settings_speed">Speed and accuracy</string>
+    <string name="player_settings_more">More</string>
+    <string name="player_source_code">Source code</string>
+    <string name="player_source_code_description">Eden, the emulator this player is built on, is free software under the GNU GPL v3</string>
     <string name="about_app_description">The Switch player for RetroForge. Based on Eden by the Eden Emulator Project (eden-emu.dev), a fork of yuzu by the yuzu Emulator Project. Free software under the GNU GPL v3. No keys, firmware or games are included: use files from your own console.</string>
     <string name="contributors">Contributors</string>
     <string name="contributors_description">People who made the open-source emulator this player is built on</string>

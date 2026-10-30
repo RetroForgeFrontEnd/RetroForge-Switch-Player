@@ -218,15 +218,8 @@ class SettingsAdapter(
     }
 
     fun onSubmenuClick(item: SubmenuSetting) {
-        // Check if this is the Freedreno Settings submenu
-        if (item.menuKey == Settings.MenuTag.SECTION_FREEDRENO) {
-            fragment.view?.findNavController()?.navigate(
-                R.id.action_settingsFragment_to_freedrenoSettingsFragment
-            )
-        } else {
-            val action = SettingsNavigationDirections.actionGlobalSettingsFragment(item.menuKey, null)
-            fragment.view?.findNavController()?.navigate(action)
-        }
+        val action = SettingsNavigationDirections.actionGlobalSettingsFragment(item.menuKey, null)
+        fragment.view?.findNavController()?.navigate(action)
     }
 
     fun onLaunchableClick(item: LaunchableSetting) {

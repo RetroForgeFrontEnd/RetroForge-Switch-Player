@@ -793,17 +793,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     true
                 }
 
-                R.id.menu_settings -> {
-                    val action = HomeNavigationDirections.actionGlobalSettingsActivity(
-                        null,
-                        Settings.MenuTag.SECTION_ROOT
-                    )
-                    binding.inGameMenu.requestFocus()
-                    binding.drawerLayout.closeDrawer(binding.quickSettingsSheet)
-                    binding.root.findNavController().navigate(action)
-                    true
-                }
-
             if (BooleanSetting.ENABLE_QUICK_SETTINGS.getBoolean())
                 R.id.menu_quick_settings else 0 -> {
                 openQuickSettingsMenu()
@@ -818,11 +807,6 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     binding.inGameMenu.requestFocus()
                     binding.drawerLayout.closeDrawer(binding.quickSettingsSheet)
                     binding.root.findNavController().navigate(action)
-                    true
-                }
-
-                R.id.menu_multiplayer -> {
-                    emulationActivity?.displayMultiplayerDialog()
                     true
                 }
 

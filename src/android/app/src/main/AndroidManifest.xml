@@ -33,6 +33,11 @@ SPDX-License-Identifier: GPL-3.0-or-later
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
 
+    <!-- RetroForge: the no-game screen opens RetroForge -->
+    <queries>
+        <package android:name="com.retroforge.app" />
+    </queries>
+
     <application
         android:name="org.yuzu.yuzu_emu.YuzuApplication"
         android:label="${appNameBase}${appNameSuffix}"
@@ -70,11 +75,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
         <activity
             android:name="org.yuzu.yuzu_emu.features.settings.ui.SettingsActivity"
-            android:theme="@style/Theme.Yuzu.Main"
-            android:label="@string/preferences_settings"/>
-
-        <activity
-            android:name="org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreenActivity"
             android:theme="@style/Theme.Yuzu.Main"
             android:label="@string/preferences_settings"/>
 

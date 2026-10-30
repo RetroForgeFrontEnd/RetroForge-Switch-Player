@@ -8,7 +8,7 @@ import org.yuzu.yuzu_emu.YuzuApplication
 
 object Settings {
     enum class MenuTag(val titleId: Int = 0) {
-        SECTION_ROOT(R.string.advanced_settings),
+        SECTION_ROOT(R.string.player_game_settings),
         SECTION_SYSTEM(R.string.preferences_system),
         SECTION_RENDERER(R.string.preferences_graphics),
         SECTION_PERFORMANCE_STATS(R.string.stats_overlay_options),

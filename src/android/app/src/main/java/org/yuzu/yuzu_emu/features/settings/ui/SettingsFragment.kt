@@ -162,21 +162,6 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        if (args.menuTag == Settings.MenuTag.SECTION_ROOT) {
-            binding.toolbarSettings.inflateMenu(R.menu.menu_settings)
-            binding.toolbarSettings.setOnMenuItemClickListener {
-                when (it.itemId) {
-                    R.id.action_search -> {
-                        view.findNavController()
-                            .navigate(R.id.action_settingsFragment_to_settingsSearchFragment)
-                        true
-                    }
-
-                    else -> false
-                }
-            }
-        }
-
         presenter.onViewCreated()
         setInsets()
     }

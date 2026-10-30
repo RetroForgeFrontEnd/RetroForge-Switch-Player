@@ -83,7 +83,7 @@
                 android:orientation="vertical">
 
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/button_contributors"
+                    android:id="@+id/button_source"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
@@ -193,70 +193,6 @@
 
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="start"
-                    android:orientation="horizontal"
-                android:visibility="gone">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_discord"
-                        style="@style/EdenButton.Secondary"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginEnd="12dp"
-                        app:icon="@drawable/ic_discord"
-                        app:iconGravity="textStart"
-                        app:iconSize="24dp"
-                        app:iconPadding="0dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_stoat"
-                        style="@style/EdenButton.Secondary"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginEnd="12dp"
-                        app:icon="@drawable/ic_stoat"
-                        app:iconGravity="textStart"
-                        app:iconSize="24dp"
-                        app:iconPadding="0dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_x"
-                        style="@style/EdenButton.Secondary"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginEnd="12dp"
-                        app:icon="@drawable/ic_x"
-                        app:iconGravity="textStart"
-                        app:iconSize="24dp"
-                        app:iconPadding="0dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_website"
-                        style="@style/EdenButton.Secondary"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginEnd="12dp"
-                        app:icon="@drawable/ic_website"
-                        app:iconGravity="textStart"
-                        app:iconSize="24dp"
-                        app:iconPadding="0dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/button_github"
-                        style="@style/EdenButton.Secondary"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        app:icon="@drawable/ic_github"
-                        app:iconGravity="textStart"
-                        app:iconSize="24dp"
-                        app:iconPadding="0dp" />
-
-                </LinearLayout>
 
             </LinearLayout>
 

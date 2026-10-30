@@ -19,11 +19,6 @@
         android:title="@string/emulation_hide_stats" />
 
     <item
-        android:id="@+id/menu_settings"
-        android:icon="@drawable/ic_settings"
-        android:title="@string/preferences_settings" />
-
-    <item
         android:id="@+id/menu_quick_settings"
         android:icon="@drawable/ic_settings"
         android:title="@string/quick_settings" />
@@ -31,17 +26,12 @@
     <item
         android:id="@+id/menu_settings_per_game"
         android:icon="@drawable/ic_settings_outline"
-        android:title="@string/per_game_settings" />
+        android:title="@string/player_game_settings" />
 
     <item
         android:id="@+id/menu_controls"
         android:icon="@drawable/ic_controller"
         android:title="@string/preferences_controls" />
-
-    <item
-        android:id="@+id/menu_multiplayer"
-        android:icon="@drawable/ic_two_users"
-        android:title="@string/multiplayer" />
 
     <item
         android:id="@+id/menu_load_amiibo"

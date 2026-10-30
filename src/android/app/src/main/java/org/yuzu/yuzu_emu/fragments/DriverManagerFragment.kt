@@ -19,7 +19,6 @@ import androidx.navigation.fragment.navArgs
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.transition.MaterialSharedAxis
-import org.yuzu.yuzu_emu.HomeNavigationDirections
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,7 +27,6 @@ import org.yuzu.yuzu_emu.adapters.DriverAdapter
 import org.yuzu.yuzu_emu.databinding.FragmentDriverManagerBinding
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.StringSetting
-import org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreen
 import org.yuzu.yuzu_emu.model.DriverViewModel
 import org.yuzu.yuzu_emu.model.HomeViewModel
 import org.yuzu.yuzu_emu.utils.FileUtil
@@ -123,11 +121,7 @@ class DriverManagerFragment : Fragment() {
         }
 
         binding.buttonFetch.setOnClickListener {
-            val action = HomeNavigationDirections.actionGlobalSettingsSubscreenActivity(
-                SettingsSubscreen.DRIVER_FETCHER,
-                null
-            )
-            binding.root.findNavController().navigate(action)
+            binding.root.findNavController().navigate(R.id.driverFetcherFragment)
         }
 
         binding.listDrivers.apply {
