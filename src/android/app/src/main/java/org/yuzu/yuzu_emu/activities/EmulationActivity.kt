@@ -57,6 +57,7 @@ import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.model.EmulationViewModel
 import org.yuzu.yuzu_emu.model.Game
 import org.yuzu.yuzu_emu.network.NetPlayManager
+import org.yuzu.yuzu_emu.network.OnlineRoom
 import org.yuzu.yuzu_emu.ui.main.MainActivity
 import org.yuzu.yuzu_emu.utils.FileUtil
 import org.yuzu.yuzu_emu.utils.InputHandler
@@ -167,6 +168,9 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
 
         binding = ActivityEmulationBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // An online room RetroForge asked for: joined (or hosted) while the game starts.
+        if (savedInstanceState == null) OnlineRoom.startFrom(this, intent)
 
         val launchIntent = Intent(intent)
         val shouldDeferLaunchForSwap = hasEmulationSession && isSwapIntent(launchIntent)

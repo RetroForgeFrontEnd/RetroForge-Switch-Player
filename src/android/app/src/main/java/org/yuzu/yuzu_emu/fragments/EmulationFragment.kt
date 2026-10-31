@@ -67,6 +67,7 @@ import org.yuzu.yuzu_emu.HomeNavigationDirections
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.features.settings.model.ByteSetting
+import org.yuzu.yuzu_emu.network.OnlineRoom
 import org.yuzu.yuzu_emu.overlay.PauseMenu
 import org.yuzu.yuzu_emu.activities.EmulationActivity
 import org.yuzu.yuzu_emu.databinding.DialogOverlayAdjustBinding
@@ -866,7 +867,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     }
 
     // RetroForge's pause menu: the same menu, pages and look as RetroForge's own players.
-    private enum class MenuPage { MAIN, PICTURE, SOUND_CONTROLS, TOUCH, EMULATOR }
+    private enum class MenuPage { MAIN, PICTURE, SOUND_CONTROLS, TOUCH, EMULATOR, ONLINE }
 
     private var pauseMenu: PauseMenu? = null
 
@@ -973,8 +974,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             title = game?.title ?: getString(R.string.app_name),
             subtitle = getString(R.string.player_menu_paused),
             isMain = true,
-            items = listOf(
+            items = listOfNotNull(
                 PauseMenu.Item(getString(R.string.player_menu_resume)) { pauseMenu?.close() },
+                OnlineRoom.roomName()?.let {
+                    PauseMenu.Item(getString(R.string.player_menu_online)) { showMenuPage(MenuPage.ONLINE) }
+                },
                 PauseMenu.Item(
                     getString(R.string.player_menu_fast_forward, onOff(NativeLibrary.isTurboMode()))
                 ) {
@@ -1133,6 +1137,21 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                             Settings.MenuTag.SECTION_INPUT
                         )
                     )
+                }
+            )
+        )
+
+        MenuPage.ONLINE -> PauseMenu.Page(
+            getString(R.string.player_menu_online_title),
+            subtitle = OnlineRoom.roomName()?.let { name ->
+                name + "\n" + getString(R.string.player_menu_online_people, OnlineRoom.members().joinToString(", "))
+            } ?: getString(R.string.player_room_left),
+            items = listOfNotNull(
+                OnlineRoom.roomName()?.let {
+                    PauseMenu.Item(getString(R.string.player_menu_online_leave)) {
+                        OnlineRoom.leave()
+                        pauseMenu?.refresh()
+                    }
                 }
             )
         )
