@@ -280,6 +280,8 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         inputManager.unregisterInputDeviceListener(this)
         stopForegroundService(this)
         NativeLibrary.playTimeManagerStop()
+        // Quitting the game leaves its online room, so it stops showing in friends' lists.
+        if (isFinishing && !isChangingConfigurations) OnlineRoom.leave()
     }
 
     override fun onUserLeaveHint() {

@@ -4,7 +4,12 @@
 package org.yuzu.yuzu_emu.network
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.net.wifi.WifiManager
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetSocketAddress
 import android.widget.Toast
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
@@ -22,6 +27,9 @@ object OnlineRoom {
     const val EXTRA_PASSWORD = "room_password"
     const val EXTRA_NAME = "room_name"
     const val EXTRA_MAX_PLAYERS = "room_max_players"
+    /** The game and its title, given back to RetroForges asking who's hosting on this Wi-Fi (RetroForge's Netplay.kt). */
+    const val EXTRA_GAME_ID = "room_game_id"
+    const val EXTRA_TITLE = "room_title"
 
     const val DEFAULT_PORT = 24872
 
@@ -52,6 +60,9 @@ object OnlineRoom {
             }
             NetPlayManager.netPlayJoinRoom(address, port, nickname, password)
         }
+        if (result == 0 && mode == "host") {
+            announce(activity, port, intent.getStringExtra(EXTRA_TITLE).orEmpty(), intent.getStringExtra(EXTRA_GAME_ID).orEmpty(), nickname)
+        }
         toast(
             activity,
             when {
@@ -72,7 +83,47 @@ object OnlineRoom {
         if (!NetPlayManager.netPlayIsJoined()) null
         else NetPlayManager.netPlayRoomInfo().firstOrNull()?.substringBefore('|')
 
-    fun leave() = NetPlayManager.netPlayLeaveRoom()
+    fun leave() {
+        stopAnnouncing()
+        NetPlayManager.netPlayLeaveRoom()
+    }
+
+    // RetroForge's "who's hosting?" on this Wi-Fi: the same question and answer as its own netplay, so a hosted room
+    // shows in friends' RetroForge lists to tap and join.
+    private const val ASK_PORT = 55451
+    private const val ASK = "RFNP?"
+    private const val ANSWER = "RFNP!"
+    @Volatile private var announcer: DatagramSocket? = null
+    private var multicast: WifiManager.MulticastLock? = null
+
+    private fun announce(context: Context, port: Int, title: String, gameId: String, nickname: String) {
+        stopAnnouncing()
+        multicast = (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager)
+            ?.createMulticastLock("retroforge-room")?.apply { setReferenceCounted(false); runCatching { acquire() } }
+        val socket = runCatching {
+            DatagramSocket(null).apply { reuseAddress = true; bind(InetSocketAddress(ASK_PORT)) }
+        }.getOrNull() ?: return
+        announcer = socket
+        Thread {
+            val buffer = ByteArray(256)
+            runCatching {
+                while (announcer === socket) {
+                    val packet = DatagramPacket(buffer, buffer.size)
+                    socket.receive(packet)
+                    if (String(packet.data, 0, packet.length) != ASK || !NetPlayManager.netPlayIsJoined()) continue
+                    val answer = listOf(ANSWER, port.toString(), title, gameId, nickname).joinToString("\n").toByteArray()
+                    socket.send(DatagramPacket(answer, answer.size, packet.address, packet.port))
+                }
+            }
+        }.apply { isDaemon = true }.start()
+    }
+
+    fun stopAnnouncing() {
+        announcer?.let { runCatching { it.close() } }
+        announcer = null
+        multicast?.let { runCatching { it.release() } }
+        multicast = null
+    }
 
     private fun problem(activity: Activity, code: Int): String = activity.getString(
         when (code) {
